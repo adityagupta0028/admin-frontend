@@ -12,31 +12,45 @@ export interface Product {
   discount_label?: string;
   promotion_label?: string;
   promotion_end_date?: string;
-  metal_type: string;
+  metal_type: string | string[];
   metal_code?: string;
   metal_price?: number;
-  diamond_origin: string;
-  carat_weight?: number;
-  diamond_quality?: string;
+  diamond_origin: string | string[];
+  carat_weight?: number | number[];
+  diamond_quality?: string | string[];
   diamond_color_grade?: string;
   diamond_clarity_grade?: string;
-  ring_size: number;
+  ring_size?: number | number[];
+  necklace_size?: string | string[];
   engraving_text?: string;
   engraving_allowed?: boolean;
   back_type?: string;
   matching_band_available?: boolean;
+  matching_band_product_id?: string | null;
   product_type?: string;
   collection_name?: string;
-  categoryId: string | {
+  categoryId: string | string[] | {
     _id: string;
     title: string;
     categoryName: string;
-  };
-  subCategoryId: string | {
+  } | Array<{
+    _id: string;
+    title: string;
+    categoryName: string;
+  }>;
+  subCategoryId: string | string[] | {
     _id: string;
     title: string;
     subCategoryName: string;
-  };
+  } | Array<{
+    _id: string;
+    title: string;
+    subCategoryName: string;
+  }>;
+  product_details?: string;
+  center_stone_details?: string;
+  side_stone_details?: string;
+  stone_details?: string;
   images: string[];
   videos?: string[];
   status: string;

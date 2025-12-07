@@ -9,7 +9,7 @@ const getToken = () => {
 
 export const apiSlice = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl,
+    baseUrl:baseUrl+'/api/v1',
     prepareHeaders: (headers) => {
       const token = getToken();
       if (token) {
