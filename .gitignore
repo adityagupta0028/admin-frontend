@@ -1,16 +1,69 @@
-.env
-node_modules
-dist
-dist-ssr
-*.local
+# ---------------------
+# Node.js Essentials
+# ---------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun.lockb
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# ---------------------
+# Environment Variables
+# ---------------------
+.env
+.env.*
+!.env.example
+
+# ---------------------
+# Logs
+# ---------------------
+logs
+*.log
+log.txt
+debug.log
+error.log
+*.pid
+*.seed
+*.pid.lock
+
+# ---------------------
+# Build / Output Files
+# ---------------------
+dist/
+build/
+out/
+tmp/
+temp/
+
+# ---------------------
+# Cache Files
+# ---------------------
+.cache/
+.next/
+.nuxt/
+vite.config.ts.timestamp*
+.vscode-test/
+
+# ---------------------
+# OS / IDE Files
+# ---------------------
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------------------
+# Coverage / Testing
+# ---------------------
+coverage/
+.nyc_output/
+
+# ---------------------
+# Misc
+# ---------------------
+*.tgz
+*.zip
+*.bak
