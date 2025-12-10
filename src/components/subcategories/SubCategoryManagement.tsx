@@ -200,11 +200,11 @@ export function SubCategoryManagement() {
   };
 
   const getCategoryName = (subCategory: SubCategory) => {
-    if (typeof subCategory.categoryId === 'string') {
-      const category = categories.find((cat: any) => cat._id === subCategory.categoryId);
-      return category ? category.categoryName : 'Unknown';
+    if (typeof subCategory?.categoryId === 'string') {
+      const category = categories.find((cat: any) => cat._id === subCategory?.categoryId);
+      return category ? category?.categoryName : 'Unknown';
     }
-    return subCategory.categoryId.categoryName;
+    return subCategory.categoryId?.categoryName;
   };
 
   return (
@@ -447,7 +447,7 @@ export function SubCategoryManagement() {
                   <SelectContent>
                     {categories.map((category: any) => (
                       <SelectItem key={category._id} value={category._id}>
-                        {category.categoryName}
+                        {category?.categoryName}
                       </SelectItem>
                     ))}
                   </SelectContent>

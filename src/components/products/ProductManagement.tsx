@@ -604,9 +604,9 @@ export function ProductManagement() {
       const category = categories.find(
         (cat: any) => cat._id === product.categoryId
       );
-      return category ? category.categoryName : "Unknown";
+      return category ? category?.categoryName : "Unknown";
     }
-    return (product.categoryId as any)[0].categoryName;
+    return (product.categoryId as any)[0]?.categoryName;
   };
 
   const getSubCategoryName = (product: Product) => {
