@@ -41,7 +41,6 @@ import {
   Banner,
 } from "../../store/api/bannerApi";
 import { toast } from "sonner";
-
 export function BannerManagement() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
