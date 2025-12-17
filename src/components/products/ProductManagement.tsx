@@ -761,16 +761,13 @@ export function ProductManagement() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        {product.original_price &&
-                          product.original_price >
-                            product.discounted_price && (
+                        {product.variants.length > 0 &&
+                           (
                             <span className="text-gray-400 line-through mr-2">
-                              ${product?.original_price?.toFixed(2)}
+                              ${product?.variants[0]?.price?.toFixed(2)}
                             </span>
                           )}
-                        <span className="font-semibold">
-                          ${product?.discounted_price?.toFixed(2)}
-                        </span>
+                       
                       </div>
                     </TableCell>
                     <TableCell>

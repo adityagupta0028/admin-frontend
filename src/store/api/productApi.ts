@@ -1,6 +1,7 @@
 import { apiSlice } from './apiSlice';
 
 export interface Product {
+  variants: any;
   _id: string;
   product_id: string;
   product_name: string;
