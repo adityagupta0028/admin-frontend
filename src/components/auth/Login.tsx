@@ -66,7 +66,7 @@ export function Login() {
             Admin Login
           </CardTitle>
           <CardDescription>
-            Enter your credentials to access the admin panels
+            Enter your credentials to access the admin panel
           </CardDescription>
         </CardHeader>
         <CardContent>
