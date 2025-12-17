@@ -79,9 +79,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       return subCategories;
     }
     return subCategories.filter((subCat) => {
-      const categoryId = typeof subCat.categoryId === 'object'
-        ? subCat.categoryId._id
-        : subCat.categoryId;
+      const categoryId = typeof subCat?.categoryId === 'object'
+        ? subCat?.categoryId?._id
+        : subCat?.categoryId;
       return selectedCategories.includes(categoryId);
     });
   }, [subCategories, selectedCategories]);
