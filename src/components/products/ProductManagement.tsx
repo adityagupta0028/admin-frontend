@@ -1451,14 +1451,14 @@ export function ProductManagement() {
                   <Label className="text-gray-500">Original Price</Label>
                   <p className="font-semibold">
                     {selectedProduct.original_price
-                      ? `$${selectedProduct.original_price.toFixed(2)}`
+                      ? `$${selectedProduct?.original_price?.toFixed(2)}`
                       : "N/A"}
                   </p>
                 </div>
                 <div>
                   <Label className="text-gray-500">Discounted Price</Label>
                   <p className="font-semibold text-green-600">
-                    ${selectedProduct.discounted_price.toFixed(2)}
+                    ${selectedProduct?.discounted_price?.toFixed(2)}
                   </p>
                 </div>
                 <div>
