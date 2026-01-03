@@ -2,6 +2,20 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import Modal from "react-bootstrap/Modal";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useCreateProductMutation } from "../../store/api/productApi";
+import {
+  useGetSettingConfigurationsQuery,
+  useGetShankConfigurationsQuery,
+  useGetHoldingMethodsQuery,
+  useGetBandProfileShapesQuery,
+  useGetBandWidthCategoriesQuery,
+  useGetBandFitsQuery,
+  useGetShankTreatmentsQuery,
+  useGetStylesQuery,
+  useGetSettingFeaturesQuery,
+  useGetMotifThemesQuery,
+  useGetOrnamentDetailsQuery,
+  useGetAccentStoneShapesQuery,
+} from "../../store/api/productAttributesApi";
 import { toast } from "sonner";
 
 interface AddProductProps {
@@ -64,8 +78,54 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   // Status
   const [status, setStatus] = useState<string>("active");
 
+  // Radio button fields (single select)
+  const [settingConfigurations, setSettingConfigurations] = useState<string>("");
+  const [shankConfigurations, setShankConfigurations] = useState<string>("");
+  const [holdingMethods, setHoldingMethods] = useState<string>("");
+  const [bandProfileShapes, setBandProfileShapes] = useState<string>("");
+  const [bandWidthCategories, setBandWidthCategories] = useState<string>("");
+  const [bandFits, setBandFits] = useState<string>("");
+
+  // Multi-select dropdown fields
+  const [shankTreatments, setShankTreatments] = useState<string[]>([]);
+  const [styles, setStyles] = useState<string[]>([]);
+  const [settingFeatures, setSettingFeatures] = useState<string[]>([]);
+  const [motifThemes, setMotifThemes] = useState<string[]>([]);
+  const [ornamentDetails, setOrnamentDetails] = useState<string[]>([]);
+  const [accentStoneShapes, setAccentStoneShapes] = useState<string[]>([]);
+
+  // Dropdown open states for multi-select
+  const [shankTreatmentsDropdownOpen, setShankTreatmentsDropdownOpen] = useState(false);
+  const [stylesDropdownOpen, setStylesDropdownOpen] = useState(false);
+  const [settingFeaturesDropdownOpen, setSettingFeaturesDropdownOpen] = useState(false);
+  const [motifThemesDropdownOpen, setMotifThemesDropdownOpen] = useState(false);
+  const [ornamentDetailsDropdownOpen, setOrnamentDetailsDropdownOpen] = useState(false);
+  const [accentStoneShapesDropdownOpen, setAccentStoneShapesDropdownOpen] = useState(false);
+
+  // Refs for dropdowns
+  const shankTreatmentsDropdownRef = useRef<HTMLDivElement>(null);
+  const stylesDropdownRef = useRef<HTMLDivElement>(null);
+  const settingFeaturesDropdownRef = useRef<HTMLDivElement>(null);
+  const motifThemesDropdownRef = useRef<HTMLDivElement>(null);
+  const ornamentDetailsDropdownRef = useRef<HTMLDivElement>(null);
+  const accentStoneShapesDropdownRef = useRef<HTMLDivElement>(null);
+
   // Loading state
   const [createProduct, { isLoading }] = useCreateProductMutation();
+
+  // Fetch product attributes
+  const { data: settingConfigurationsData } = useGetSettingConfigurationsQuery();
+  const { data: shankConfigurationsData } = useGetShankConfigurationsQuery();
+  const { data: holdingMethodsData } = useGetHoldingMethodsQuery();
+  const { data: bandProfileShapesData } = useGetBandProfileShapesQuery();
+  const { data: bandWidthCategoriesData } = useGetBandWidthCategoriesQuery();
+  const { data: bandFitsData } = useGetBandFitsQuery();
+  const { data: shankTreatmentsData } = useGetShankTreatmentsQuery();
+  const { data: stylesData } = useGetStylesQuery();
+  const { data: settingFeaturesData } = useGetSettingFeaturesQuery();
+  const { data: motifThemesData } = useGetMotifThemesQuery();
+  const { data: ornamentDetailsData } = useGetOrnamentDetailsQuery();
+  const { data: accentStoneShapesData } = useGetAccentStoneShapesQuery();
 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const subCategoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -224,6 +284,55 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     );
   };
 
+  // Toggle multi-select dropdown fields
+  const toggleShankTreatment = (id: string) => {
+    setShankTreatments((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleStyle = (id: string) => {
+    setStyles((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleSettingFeature = (id: string) => {
+    setSettingFeatures((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleMotifTheme = (id: string) => {
+    setMotifThemes((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleOrnamentDetail = (id: string) => {
+    setOrnamentDetails((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleAccentStoneShape = (id: string) => {
+    setAccentStoneShapes((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
   // Close dropdowns if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -244,6 +353,24 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       }
       if (necklaceSizeDropdownRef.current && !necklaceSizeDropdownRef.current.contains(event.target as Node)) {
         setNecklaceSizeDropdownOpen(false);
+      }
+      if (shankTreatmentsDropdownRef.current && !shankTreatmentsDropdownRef.current.contains(event.target as Node)) {
+        setShankTreatmentsDropdownOpen(false);
+      }
+      if (stylesDropdownRef.current && !stylesDropdownRef.current.contains(event.target as Node)) {
+        setStylesDropdownOpen(false);
+      }
+      if (settingFeaturesDropdownRef.current && !settingFeaturesDropdownRef.current.contains(event.target as Node)) {
+        setSettingFeaturesDropdownOpen(false);
+      }
+      if (motifThemesDropdownRef.current && !motifThemesDropdownRef.current.contains(event.target as Node)) {
+        setMotifThemesDropdownOpen(false);
+      }
+      if (ornamentDetailsDropdownRef.current && !ornamentDetailsDropdownRef.current.contains(event.target as Node)) {
+        setOrnamentDetailsDropdownOpen(false);
+      }
+      if (accentStoneShapesDropdownRef.current && !accentStoneShapesDropdownRef.current.contains(event.target as Node)) {
+        setAccentStoneShapesDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -275,6 +402,19 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setSideStoneDetails("");
     setStoneDetails("");
     setStatus("active");
+    // Reset new fields
+    setSettingConfigurations("");
+    setShankConfigurations("");
+    setHoldingMethods("");
+    setBandProfileShapes("");
+    setBandWidthCategories("");
+    setBandFits("");
+    setShankTreatments([]);
+    setStyles([]);
+    setSettingFeatures([]);
+    setMotifThemes([]);
+    setOrnamentDetails([]);
+    setAccentStoneShapes([]);
   };
 
   // Handle form submission
@@ -300,6 +440,54 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     }
     if (selectedSubCategories.length === 0) {
       toast.error("Please select at least one Sub Category");
+      return;
+    }
+    if (!settingConfigurations) {
+      toast.error("Please select Setting Configurations");
+      return;
+    }
+    if (!shankConfigurations) {
+      toast.error("Please select Shank Configurations");
+      return;
+    }
+    if (!holdingMethods) {
+      toast.error("Please select Holding Methods");
+      return;
+    }
+    if (!bandProfileShapes) {
+      toast.error("Please select Band Profile Shapes");
+      return;
+    }
+    if (!bandWidthCategories) {
+      toast.error("Please select Band Width Categories");
+      return;
+    }
+    if (!bandFits) {
+      toast.error("Please select Band Fits");
+      return;
+    }
+    if (shankTreatments.length === 0) {
+      toast.error("Please select at least one Shank Treatment");
+      return;
+    }
+    if (styles.length === 0) {
+      toast.error("Please select at least one Style");
+      return;
+    }
+    if (settingFeatures.length === 0) {
+      toast.error("Please select at least one Setting Feature");
+      return;
+    }
+    if (motifThemes.length === 0) {
+      toast.error("Please select at least one Motif Theme");
+      return;
+    }
+    if (ornamentDetails.length === 0) {
+      toast.error("Please select at least one Ornament Detail");
+      return;
+    }
+    if (accentStoneShapes.length === 0) {
+      toast.error("Please select at least one Accent Stone Shape");
       return;
     }
 
@@ -364,6 +552,34 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       selectedFiles.forEach((file) => {
         formData.append("images", file);
       });
+
+      // Radio button fields (single ObjectId)
+      if (settingConfigurations) {
+        formData.append("settingConfigurations", settingConfigurations);
+      }
+      if (shankConfigurations) {
+        formData.append("shankConfigurations", shankConfigurations);
+      }
+      if (holdingMethods) {
+        formData.append("holdingMethods", holdingMethods);
+      }
+      if (bandProfileShapes) {
+        formData.append("bandProfileShapes", bandProfileShapes);
+      }
+      if (bandWidthCategories) {
+        formData.append("bandWidthCategories", bandWidthCategories);
+      }
+      if (bandFits) {
+        formData.append("bandFits", bandFits);
+      }
+
+      // Multi-select dropdown fields (array of ObjectIds)
+      shankTreatments.forEach((id) => formData.append("shankTreatments", id));
+      styles.forEach((id) => formData.append("styles", id));
+      settingFeatures.forEach((id) => formData.append("settingFeatures", id));
+      motifThemes.forEach((id) => formData.append("motifThemes", id));
+      ornamentDetails.forEach((id) => formData.append("ornamentDetails", id));
+      accentStoneShapes.forEach((id) => formData.append("accentStoneShapes", id));
 
       await createProduct(formData).unwrap();
       toast.success("Product created successfully!");
@@ -977,7 +1193,355 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   )}
 </div>
 
+            {/* Radio Button Fields - Single Select */}
+            <div className="mb-3">
+              <label className="form-label text-black">Setting Configurations *</label>
+              <div>
+                {settingConfigurationsData?.data?.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="settingConfigurations"
+                      id={`settingConfig-${item._id}`}
+                      value={item._id}
+                      checked={settingConfigurations === item._id}
+                      onChange={(e) => setSettingConfigurations(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`settingConfig-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
 
+            <div className="mb-3">
+              <label className="form-label text-black">Shank Configurations *</label>
+              <div>
+                {shankConfigurationsData?.data?.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="shankConfigurations"
+                      id={`shankConfig-${item._id}`}
+                      value={item._id}
+                      checked={shankConfigurations === item._id}
+                      onChange={(e) => setShankConfigurations(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`shankConfig-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-black">Holding Methods *</label>
+              <div>
+                {holdingMethodsData?.data?.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="holdingMethods"
+                      id={`holdingMethod-${item._id}`}
+                      value={item._id}
+                      checked={holdingMethods === item._id}
+                      onChange={(e) => setHoldingMethods(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`holdingMethod-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-black">Band Profile Shapes *</label>
+              <div>
+                {bandProfileShapesData?.data?.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="bandProfileShapes"
+                      id={`bandProfileShape-${item._id}`}
+                      value={item._id}
+                      checked={bandProfileShapes === item._id}
+                      onChange={(e) => setBandProfileShapes(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`bandProfileShape-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-black">Band Width Categories *</label>
+              <div>
+                {bandWidthCategoriesData?.data?.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="bandWidthCategories"
+                      id={`bandWidthCategory-${item._id}`}
+                      value={item._id}
+                      checked={bandWidthCategories === item._id}
+                      onChange={(e) => setBandWidthCategories(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`bandWidthCategory-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-black">Band Fits *</label>
+              <div>
+                {bandFitsData?.data?.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="bandFits"
+                      id={`bandFit-${item._id}`}
+                      value={item._id}
+                      checked={bandFits === item._id}
+                      onChange={(e) => setBandFits(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`bandFit-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Multi-Select Dropdown Fields */}
+            <div className="dropdown-multi">
+              <div className="mb-3 ddr-width" ref={shankTreatmentsDropdownRef}>
+                <label className="dropdown-label text-black">Shank Treatments *</label>
+                <div className={`dropdown ${shankTreatmentsDropdownOpen ? "active" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => setShankTreatmentsDropdownOpen(!shankTreatmentsDropdownOpen)}
+                  >
+                    <span>
+                      {shankTreatments.length
+                        ? `${shankTreatments.length} item${shankTreatments.length > 1 ? 's' : ''} selected`
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
+                  </div>
+                  {shankTreatmentsDropdownOpen && (
+                    <div className="dropdown-list">
+                      {shankTreatmentsData?.data?.map((item) => (
+                        <label className="dropdown-item" key={item._id}>
+                          <input
+                            type="checkbox"
+                            value={item._id}
+                            checked={shankTreatments.includes(item._id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleShankTreatment(item._id);
+                            }}
+                          />
+                          {item.displayName}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-3 ddr-width" ref={stylesDropdownRef}>
+                <label className="dropdown-label text-black">Styles *</label>
+                <div className={`dropdown ${stylesDropdownOpen ? "active" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => setStylesDropdownOpen(!stylesDropdownOpen)}
+                  >
+                    <span>
+                      {styles.length
+                        ? `${styles.length} item${styles.length > 1 ? 's' : ''} selected`
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
+                  </div>
+                  {stylesDropdownOpen && (
+                    <div className="dropdown-list">
+                      {stylesData?.data?.map((item) => (
+                        <label className="dropdown-item" key={item._id}>
+                          <input
+                            type="checkbox"
+                            value={item._id}
+                            checked={styles.includes(item._id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleStyle(item._id);
+                            }}
+                          />
+                          {item.displayName}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="dropdown-multi">
+              <div className="mb-3 ddr-width" ref={settingFeaturesDropdownRef}>
+                <label className="dropdown-label text-black">Setting Features *</label>
+                <div className={`dropdown ${settingFeaturesDropdownOpen ? "active" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => setSettingFeaturesDropdownOpen(!settingFeaturesDropdownOpen)}
+                  >
+                    <span>
+                      {settingFeatures.length
+                        ? `${settingFeatures.length} item${settingFeatures.length > 1 ? 's' : ''} selected`
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
+                  </div>
+                  {settingFeaturesDropdownOpen && (
+                    <div className="dropdown-list">
+                      {settingFeaturesData?.data?.map((item) => (
+                        <label className="dropdown-item" key={item._id}>
+                          <input
+                            type="checkbox"
+                            value={item._id}
+                            checked={settingFeatures.includes(item._id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleSettingFeature(item._id);
+                            }}
+                          />
+                          {item.displayName}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-3 ddr-width" ref={motifThemesDropdownRef}>
+                <label className="dropdown-label text-black">Motif Themes *</label>
+                <div className={`dropdown ${motifThemesDropdownOpen ? "active" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => setMotifThemesDropdownOpen(!motifThemesDropdownOpen)}
+                  >
+                    <span>
+                      {motifThemes.length
+                        ? `${motifThemes.length} item${motifThemes.length > 1 ? 's' : ''} selected`
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
+                  </div>
+                  {motifThemesDropdownOpen && (
+                    <div className="dropdown-list">
+                      {motifThemesData?.data?.map((item) => (
+                        <label className="dropdown-item" key={item._id}>
+                          <input
+                            type="checkbox"
+                            value={item._id}
+                            checked={motifThemes.includes(item._id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleMotifTheme(item._id);
+                            }}
+                          />
+                          {item.displayName}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="dropdown-multi">
+              <div className="mb-3 ddr-width" ref={ornamentDetailsDropdownRef}>
+                <label className="dropdown-label text-black">Ornament Details *</label>
+                <div className={`dropdown ${ornamentDetailsDropdownOpen ? "active" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => setOrnamentDetailsDropdownOpen(!ornamentDetailsDropdownOpen)}
+                  >
+                    <span>
+                      {ornamentDetails.length
+                        ? `${ornamentDetails.length} item${ornamentDetails.length > 1 ? 's' : ''} selected`
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
+                  </div>
+                  {ornamentDetailsDropdownOpen && (
+                    <div className="dropdown-list">
+                      {ornamentDetailsData?.data?.map((item) => (
+                        <label className="dropdown-item" key={item._id}>
+                          <input
+                            type="checkbox"
+                            value={item._id}
+                            checked={ornamentDetails.includes(item._id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleOrnamentDetail(item._id);
+                            }}
+                          />
+                          {item.displayName}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-3 ddr-width" ref={accentStoneShapesDropdownRef}>
+                <label className="dropdown-label text-black">Accent Stone Shapes *</label>
+                <div className={`dropdown ${accentStoneShapesDropdownOpen ? "active" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => setAccentStoneShapesDropdownOpen(!accentStoneShapesDropdownOpen)}
+                  >
+                    <span>
+                      {accentStoneShapes.length
+                        ? `${accentStoneShapes.length} item${accentStoneShapes.length > 1 ? 's' : ''} selected`
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
+                  </div>
+                  {accentStoneShapesDropdownOpen && (
+                    <div className="dropdown-list">
+                      {accentStoneShapesData?.data?.map((item) => (
+                        <label className="dropdown-item" key={item._id}>
+                          <input
+                            type="checkbox"
+                            value={item._id}
+                            checked={accentStoneShapes.includes(item._id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleAccentStoneShape(item._id);
+                            }}
+                          />
+                          {item.displayName}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Text Areas */}
             <div className="mb-3">
