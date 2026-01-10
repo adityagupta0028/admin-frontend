@@ -43,6 +43,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [discountedPrice, setDiscountedPrice] = useState<string>("");
   const [discountLabel, setDiscountLabel] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedVideoFiles, setSelectedVideoFiles] = useState<File[]>([]);
   console.log(categories, subCategories);
   // Category and SubCategory
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -50,6 +51,11 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [subCategoryDropdownOpen, setSubCategoryDropdownOpen] = useState(false);
   const [variants, setVariants] = useState<VariantRow[]>([]);
+  // View Angle (single select)
+  const [viewAngle, setViewAngle] = useState<string>("");
+  const [viewAngleDropdownOpen, setViewAngleDropdownOpen] = useState(false);
+  const viewAngleDropdownRef = useRef<HTMLDivElement>(null);
+
   // Metal Type
   const [metalTypes, setMetalTypes] = useState<string[]>([]);
 
@@ -182,6 +188,12 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const necklaceSizeStatic = ["16\"", "18\"", "20\"", "22\"", "24\""];
   const caratWeightOptions = ["0.5", "1", "1.5", "2", "2.5", "3", "4", "5"];
 
+  const viewAngleOptions = [
+    { id: 1, label: "Angled view", value: "Angled view" },
+    { id: 2, label: "Top view", value: "Top view" },
+    { id: 3, label: "Side view", value: "Side view" },
+  ];
+
   // Handle file selection
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []) as File[];
@@ -193,6 +205,19 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     const updated = [...selectedFiles];
     updated.splice(index, 1);
     setSelectedFiles(updated);
+  };
+
+  // Handle video file selection
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []) as File[];
+    setSelectedVideoFiles((prev) => [...prev, ...files]);
+  };
+
+  // Remove video
+  const removeVideo = (index: number) => {
+    const updated = [...selectedVideoFiles];
+    updated.splice(index, 1);
+    setSelectedVideoFiles(updated);
   };
 
   // Toggle category selection
@@ -264,6 +289,12 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
         ? prev.filter((s) => s !== size)
         : [...prev, size]
     );
+  };
+
+  // Select view angle (single select)
+  const selectViewAngle = (angle: { value: string }) => {
+    setViewAngle(angle.value);
+    setViewAngleDropdownOpen(false);
   };
 
   // Toggle metal type
@@ -354,6 +385,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       if (necklaceSizeDropdownRef.current && !necklaceSizeDropdownRef.current.contains(event.target as Node)) {
         setNecklaceSizeDropdownOpen(false);
       }
+      if (viewAngleDropdownRef.current && !viewAngleDropdownRef.current.contains(event.target as Node)) {
+        setViewAngleDropdownOpen(false);
+      }
       if (shankTreatmentsDropdownRef.current && !shankTreatmentsDropdownRef.current.contains(event.target as Node)) {
         setShankTreatmentsDropdownOpen(false);
       }
@@ -388,8 +422,10 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setDiscountedPrice("");
     setDiscountLabel("");
     setSelectedFiles([]);
+    setSelectedVideoFiles([]);
     setSelectedCategories([]);
     setSelectedSubCategories([]);
+    setViewAngle("");
     setMetalTypes([]);
     setDiamondOrigins([]);
     setDiamondQualities([]);
@@ -508,6 +544,11 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       selectedCategories.forEach((catId) => formData.append("categoryId", catId));
       selectedSubCategories.forEach((subCatId) => formData.append("subCategoryId", subCatId));
 
+      // View Angle
+      if (viewAngle) {
+        formData.append("viewAngle", viewAngle);
+      }
+
       // Metal types
       metalTypes.forEach((type) => formData.append("metal_type", type));
 
@@ -551,6 +592,11 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       // Images
       selectedFiles.forEach((file) => {
         formData.append("images", file);
+      });
+
+      // Videos
+      selectedVideoFiles.forEach((file) => {
+        formData.append("videos", file);
       });
 
       // Radio button fields (single ObjectId)
@@ -820,6 +866,37 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
               </div>
             </div>
 
+             {/* Video Upload */}
+             <div className="mb-3">
+              <label className="form-label text-black">Upload Videos</label>
+              <input
+                type="file"
+                className="form-control"
+                multiple
+                accept="video/*"
+                onChange={handleVideoUpload}
+              />
+              <div id="video-preview" className="video-preview mt-2">
+                {selectedVideoFiles.map((file, index) => (
+                  <div className="video-box mb-2" key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '10px' }}>
+                    <video
+                      src={URL.createObjectURL(file)}
+                      controls
+                      style={{ maxWidth: '200px', maxHeight: '150px' }}
+                    />
+                    <button
+                      type="button"
+                      className="remove-btn"
+                      onClick={() => removeVideo(index)}
+                      style={{ position: 'absolute', top: '5px', right: '5px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '25px', height: '25px', cursor: 'pointer' }}
+                    >
+                      ✖
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Image Upload */}
             <div className="mb-3">
               <label className="form-label text-black">Upload Images</label>
@@ -846,10 +923,13 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
               </div>
             </div>
 
+           
+
             {/* Checkboxes */}
             <div className="mb-3">
               <label className="form-label text-black">Metal Type</label>
               <div className="w-100 half-divide">
+             
                 <div className="form-check w-50">
                   <input
                     className="form-check-input"
@@ -914,6 +994,50 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   />
                   <label className="form-check-label text-black" htmlFor="metal6">18K Rose Gold</label>
                 </div>
+                <div className="form-check w-50">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="metal1"
+                    checked={metalTypes.includes("Platinum")}
+                    onChange={() => toggleMetalType("Platinum")}
+                  />
+                  <label className="form-check-label text-black" htmlFor="metal1">Platinum</label>
+                </div>
+              </div>
+            </div>
+{/* View Angle Dropdown (Single Select) */}
+<div className="mb-3" ref={viewAngleDropdownRef}>
+              <label className="dropdown-label text-black">View Angle (image shape)</label>
+              <div className={`dropdown ${viewAngleDropdownOpen ? "active" : ""}`}>
+                <div
+                  className="dropdown-select"
+                  onClick={() => setViewAngleDropdownOpen(!viewAngleDropdownOpen)}
+                >
+                  <span>
+                    {viewAngle || "Select..."}
+                  </span>
+                  <i className="dropdown-arrow"></i>
+                </div>
+                {viewAngleDropdownOpen && (
+                  <div className="dropdown-list">
+                    {viewAngleOptions.map((angle) => (
+                      <label className="dropdown-item" key={angle.id}>
+                        <input
+                          type="radio"
+                          name="viewAngle"
+                          value={angle.value}
+                          checked={viewAngle === angle.value}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            selectViewAngle(angle);
+                          }}
+                        />
+                        {angle.label}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="dropdown-multi">

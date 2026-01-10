@@ -10,7 +10,8 @@ import {
   FileText, 
   Settings, 
   LogOut,
-  Crown
+  Crown,
+  Filter
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "../ui/utils";
@@ -30,6 +31,7 @@ const menuItems = [
   { path: "/banner", label: "Banners", icon: Image },
   { path: "/faq", label: "FAQs", icon: HelpCircle },
   { path: "/cms", label: "CMS", icon: FileText },
+  { path: "/filter", label: "Filter Management", icon: Filter },
   { path: "/setting", label: "Settings", icon: Settings },
 ];
 

@@ -12,6 +12,7 @@ import { BannerPage } from "./pages/BannerPage";
 import { FAQPage } from "./pages/FAQPage";
 import { CMSPage } from "./pages/CMSPage";
 import { SettingPage } from "./pages/SettingPage";
+import { FilterPage } from "./pages/FilterPage";
 import { Toaster } from "./components/ui/sonner";
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/cms" element={<CMSPage />} />
         <Route path="/setting" element={<SettingPage />} />
+        <Route path="/filter" element={<FilterPage />} />
         
         {/* Redirect any unknown routes to dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
