@@ -598,6 +598,28 @@ export function ProductManagement() {
     }${imagePath}`;
   };
 
+  // Get default product image - prioritize "Angled view" from metal_images
+  const getDefaultProductImage = (product: Product): string | null => {
+    // First, try to get "Angled view" from metal_images
+    if (product.metal_images && product.metal_images.length > 0) {
+      const angledViewImage = product.metal_images.find(
+        (img) => img.view_angle === "Angled view"
+      );
+      if (angledViewImage) {
+        return getImageUrl(angledViewImage.image);
+      }
+      // If no Angled view, get the first metal image
+      if (product.metal_images[0]?.image) {
+        return getImageUrl(product.metal_images[0].image);
+      }
+    }
+    // Fallback to regular images
+    if (product.images && product.images.length > 0) {
+      return getImageUrl(product.images[0]);
+    }
+    return null;
+  };
+
   const getCategoryName = (product: Product) => {
     console.log("product.categoryId=====>", product);
     if (typeof product.categoryId === "string") {
@@ -736,9 +758,9 @@ export function ProductManagement() {
                   <TableRow key={product._id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        {product.images && product.images.length > 0 ? (
+                        {getDefaultProductImage(product) ? (
                           <ImageWithFallback
-                            src={getImageUrl(product.images[0])}
+                            src={getDefaultProductImage(product)!}
                             alt={product.product_name}
                             className="w-12 h-12 rounded-lg object-cover border border-gray-200"
                           />

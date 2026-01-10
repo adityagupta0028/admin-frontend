@@ -42,7 +42,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [originalPrice, setOriginalPrice] = useState<string>("");
   const [discountedPrice, setDiscountedPrice] = useState<string>("");
   const [discountLabel, setDiscountLabel] = useState<string>("");
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedVideoFiles, setSelectedVideoFiles] = useState<File[]>([]);
   console.log(categories, subCategories);
   // Category and SubCategory
@@ -51,13 +50,15 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [subCategoryDropdownOpen, setSubCategoryDropdownOpen] = useState(false);
   const [variants, setVariants] = useState<VariantRow[]>([]);
-  // View Angle (single select)
-  const [viewAngle, setViewAngle] = useState<string>("");
-  const [viewAngleDropdownOpen, setViewAngleDropdownOpen] = useState(false);
-  const viewAngleDropdownRef = useRef<HTMLDivElement>(null);
 
   // Metal Type
   const [metalTypes, setMetalTypes] = useState<string[]>([]);
+  
+  // Metal Images: { [metalType]: { [viewAngle]: File } } - single image per view angle
+  const [metalImages, setMetalImages] = useState<Record<string, Record<string, File>>>({});
+  
+  // Metal View Angles: { [metalType]: string[] } - all 3 view angles are required
+  const [metalViewAngles, setMetalViewAngles] = useState<Record<string, string[]>>({});
 
   // Diamond fields
   const [diamondOrigins, setDiamondOrigins] = useState<string[]>([]);
@@ -194,19 +195,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     { id: 3, label: "Side view", value: "Side view" },
   ];
 
-  // Handle file selection
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []) as File[];
-    setSelectedFiles((prev) => [...prev, ...files]);
-  };
-
-  // Remove image
-  const removeImage = (index: number) => {
-    const updated = [...selectedFiles];
-    updated.splice(index, 1);
-    setSelectedFiles(updated);
-  };
-
   // Handle video file selection
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []) as File[];
@@ -291,19 +279,67 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     );
   };
 
-  // Select view angle (single select)
-  const selectViewAngle = (angle: { value: string }) => {
-    setViewAngle(angle.value);
-    setViewAngleDropdownOpen(false);
-  };
-
   // Toggle metal type
   const toggleMetalType = (type: string) => {
-    setMetalTypes((prev) =>
-      prev.includes(type)
-        ? prev.filter((t) => t !== type)
-        : [...prev, type]
-    );
+    setMetalTypes((prev) => {
+      const isRemoving = prev.includes(type);
+      if (isRemoving) {
+        // Remove metal type and its associated data
+        setMetalImages((imgPrev) => {
+          const newImages = { ...imgPrev };
+          delete newImages[type];
+          return newImages;
+        });
+        setMetalViewAngles((anglePrev) => {
+          const newAngles = { ...anglePrev };
+          delete newAngles[type];
+          return newAngles;
+        });
+        return prev.filter((t) => t !== type);
+      } else {
+        // Add metal type with all 3 view angles required
+        const allViewAngles = viewAngleOptions.map(a => a.value);
+        setMetalImages((imgPrev) => ({
+          ...imgPrev,
+          [type]: {}
+        }));
+        setMetalViewAngles((anglePrev) => ({
+          ...anglePrev,
+          [type]: allViewAngles
+        }));
+        return [...prev, type];
+      }
+    });
+  };
+  
+  // Handle image upload for specific metal type and view angle (single file)
+  const handleMetalImageUpload = (metalType: string, viewAngle: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setMetalImages((prev) => ({
+        ...prev,
+        [metalType]: {
+          ...prev[metalType],
+          [viewAngle]: file
+        }
+      }));
+    }
+  };
+  
+  // Remove image for specific metal type and view angle
+  const removeMetalImage = (metalType: string, viewAngle: string) => {
+    setMetalImages((prev) => {
+      const newImages = { ...prev };
+      if (newImages[metalType]) {
+        delete newImages[metalType][viewAngle];
+      }
+      return newImages;
+    });
+    // Reset the file input
+    const input = document.querySelector(`input[data-metal="${metalType}"][data-angle="${viewAngle}"]`) as HTMLInputElement;
+    if (input) {
+      input.value = '';
+    }
   };
 
   // Toggle carat weight
@@ -385,9 +421,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       if (necklaceSizeDropdownRef.current && !necklaceSizeDropdownRef.current.contains(event.target as Node)) {
         setNecklaceSizeDropdownOpen(false);
       }
-      if (viewAngleDropdownRef.current && !viewAngleDropdownRef.current.contains(event.target as Node)) {
-        setViewAngleDropdownOpen(false);
-      }
       if (shankTreatmentsDropdownRef.current && !shankTreatmentsDropdownRef.current.contains(event.target as Node)) {
         setShankTreatmentsDropdownOpen(false);
       }
@@ -421,12 +454,12 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setOriginalPrice("");
     setDiscountedPrice("");
     setDiscountLabel("");
-    setSelectedFiles([]);
     setSelectedVideoFiles([]);
     setSelectedCategories([]);
     setSelectedSubCategories([]);
-    setViewAngle("");
     setMetalTypes([]);
+    setMetalImages({});
+    setMetalViewAngles({});
     setDiamondOrigins([]);
     setDiamondQualities([]);
     setCaratWeights([]);
@@ -466,10 +499,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     //   toast.error("Please enter a valid Discounted Price");
     //   return;
     // }
-    if (selectedFiles.length === 0) {
-      toast.error("Please upload at least one image");
-      return;
-    }
     if (selectedCategories.length === 0) {
       toast.error("Please select at least one Category");
       return;
@@ -526,6 +555,24 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       toast.error("Please select at least one Accent Stone Shape");
       return;
     }
+    
+    // Validate metal images - all 3 view angles must have images for each metal type
+    if (metalTypes.length > 0) {
+      const allViewAngles = viewAngleOptions.map(a => a.value);
+      for (const metalType of metalTypes) {
+        const selectedAngles = metalViewAngles[metalType] || [];
+        if (selectedAngles.length !== allViewAngles.length) {
+          toast.error(`Please ensure all 3 view angles are selected for ${metalType}`);
+          return;
+        }
+        for (const viewAngle of allViewAngles) {
+          if (!metalImages[metalType]?.[viewAngle]) {
+            toast.error(`Please upload an image for ${viewAngle} of ${metalType}`);
+            return;
+          }
+        }
+      }
+    }
 
     try {
       const formData = new FormData();
@@ -544,13 +591,21 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       selectedCategories.forEach((catId) => formData.append("categoryId", catId));
       selectedSubCategories.forEach((subCatId) => formData.append("subCategoryId", subCatId));
 
-      // View Angle
-      if (viewAngle) {
-        formData.append("viewAngle", viewAngle);
-      }
-
       // Metal types
       metalTypes.forEach((type) => formData.append("metal_type", type));
+      
+      // Metal Images - send single file per view angle
+      // Format: metal_images_${metalType}_${viewAngle}
+      metalTypes.forEach((metalType) => {
+        const viewAngles = metalViewAngles[metalType] || [];
+        viewAngles.forEach((viewAngle) => {
+          const imageFile = metalImages[metalType]?.[viewAngle];
+          if (imageFile) {
+            const fieldName = `metal_images_${metalType.replace(/\s+/g, '_')}_${viewAngle.replace(/\s+/g, '_')}`;
+            formData.append(fieldName, imageFile);
+          }
+        });
+      });
 
       // Diamond fields
       diamondOrigins.forEach((origin) => formData.append("diamond_origin", origin));
@@ -588,11 +643,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
         formData.append("variants", JSON.stringify(cleaned));
       }
-
-      // Images
-      selectedFiles.forEach((file) => {
-        formData.append("images", file);
-      });
 
       // Videos
       selectedVideoFiles.forEach((file) => {
@@ -897,31 +947,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
               </div>
             </div>
 
-            {/* Image Upload */}
-            <div className="mb-3">
-              <label className="form-label text-black">Upload Images</label>
-              <input
-                type="file"
-                className="form-control"
-                multiple
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
-              <div id="preview" className="image-preview">
-                {selectedFiles.map((file, index) => (
-                  <div className="image-box" key={index}>
-                    <img src={URL.createObjectURL(file)} alt="preview" />
-                    <button
-                      type="button"
-                      className="remove-btn"
-                      onClick={() => removeImage(index)}
-                    >
-                      ✖
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
 
            
 
@@ -1006,40 +1031,73 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 </div>
               </div>
             </div>
-{/* View Angle Dropdown (Single Select) */}
-<div className="mb-3" ref={viewAngleDropdownRef}>
-              <label className="dropdown-label text-black">View Angle (image shape)</label>
-              <div className={`dropdown ${viewAngleDropdownOpen ? "active" : ""}`}>
-                <div
-                  className="dropdown-select"
-                  onClick={() => setViewAngleDropdownOpen(!viewAngleDropdownOpen)}
-                >
-                  <span>
-                    {viewAngle || "Select..."}
-                  </span>
-                  <i className="dropdown-arrow"></i>
-                </div>
-                {viewAngleDropdownOpen && (
-                  <div className="dropdown-list">
-                    {viewAngleOptions.map((angle) => (
-                      <label className="dropdown-item" key={angle.id}>
-                        <input
-                          type="radio"
-                          name="viewAngle"
-                          value={angle.value}
-                          checked={viewAngle === angle.value}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            selectViewAngle(angle);
-                          }}
-                        />
-                        {angle.label}
-                      </label>
-                    ))}
+
+            {/* View Angle and Image Upload per Metal Type */}
+            {metalTypes.length > 0 && (
+              <div className="mb-3">
+                <label className="form-label text-black fw-bold">View Angle & Image Upload (per Metal Type)</label>
+                {metalTypes.map((metalType) => (
+                  <div key={metalType} className="mb-4 p-3 border rounded">
+                    <h6 className="text-black mb-3">{metalType}</h6>
+                    
+                    {/* View Angle Selection - All 3 Required */}
+                    <div className="mb-3">
+                      <label className="form-label text-black">View Angles <span className="text-danger">*</span></label>
+                      <div className="w-100">
+                        {viewAngleOptions.map((angle) => (
+                          <div className="form-check form-check-inline" key={angle.id}>
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`${metalType}-${angle.value}`}
+                              checked={(metalViewAngles[metalType] || []).includes(angle.value)}
+                              disabled
+                              readOnly
+                            />
+                            <label className="form-check-label text-black" htmlFor={`${metalType}-${angle.value}`}>
+                              {angle.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <small className="text-muted">All view angles are required</small>
+                    </div>
+                    
+                    {/* Image Upload for each View Angle - Single Image Required */}
+                    <div className="mb-3">
+                      <label className="form-label text-black">Upload Images <span className="text-danger">*</span></label>
+                      {viewAngleOptions.map((angle) => (
+                        <div key={angle.id} className="mb-3 p-2 bg-light rounded">
+                          <label className="form-label text-black fw-semibold">{angle.label} <span className="text-danger">*</span></label>
+                          <input
+                            type="file"
+                            className="form-control mb-2"
+                            accept="image/*"
+                            data-metal={metalType}
+                            data-angle={angle.value}
+                            onChange={(e) => handleMetalImageUpload(metalType, angle.value, e)}
+                          />
+                          <div className="image-preview">
+                            {metalImages[metalType]?.[angle.value] && (
+                              <div className="image-box">
+                                <img src={URL.createObjectURL(metalImages[metalType][angle.value])} alt={`${metalType} ${angle.value}`} />
+                                <button
+                                  type="button"
+                                  className="remove-btn"
+                                  onClick={() => removeMetalImage(metalType, angle.value)}
+                                >
+                                  ✖
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            </div>
+            )}
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={diamondDropdownRef}>
                 <label className="dropdown-label text-black">Diamond Origin</label>

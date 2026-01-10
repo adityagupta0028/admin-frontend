@@ -54,6 +54,11 @@ export interface Product {
   stone_details?: string;
   images: string[];
   videos?: string[];
+  metal_images?: Array<{
+    metal_type: string;
+    view_angle: string;
+    image: string;
+  }>;
   status: string;
   tags?: string[];
   isDeleted: boolean;
