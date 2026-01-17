@@ -82,6 +82,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [sideStoneDetails, setSideStoneDetails] = useState<string>("");
   const [stoneDetails, setStoneDetails] = useState<string>("");
   const [sizeType, setSizeType] = useState<"ring" | "necklace">("ring");
+  // Gender
+  const [gender, setGender] = useState<string>("Male");
   // Status
   const [status, setStatus] = useState<string>("active");
 
@@ -470,6 +472,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setCenterStoneDetails("");
     setSideStoneDetails("");
     setStoneDetails("");
+    setGender("Male");
     setStatus("active");
     // Reset new fields
     setSettingConfigurations("");
@@ -622,6 +625,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       if (centerStoneDetails.trim()) formData.append("center_stone_details", centerStoneDetails.trim());
       if (sideStoneDetails.trim()) formData.append("side_stone_details", sideStoneDetails.trim());
       if (stoneDetails.trim()) formData.append("stone_details", stoneDetails.trim());
+
+      // Gender
+      formData.append("gender", gender);
 
       // Status
       formData.append("status", status);
@@ -960,20 +966,20 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     className="form-check-input"
                     type="checkbox"
                     id="metal1"
-                    checked={metalTypes.includes("15K White Gold")}
-                    onChange={() => toggleMetalType("15K White Gold")}
+                    checked={metalTypes.includes("14K White Gold")}
+                    onChange={() => toggleMetalType("14K White Gold")}
                   />
-                  <label className="form-check-label text-black" htmlFor="metal1">15K White Gold</label>
+                  <label className="form-check-label text-black" htmlFor="metal1">14K White Gold</label>
                 </div>
                 <div className="form-check w-50">
                   <input
                     className="form-check-input"
                     type="checkbox"
                     id="metal2"
-                    checked={metalTypes.includes("15K Yellow Gold")}
-                    onChange={() => toggleMetalType("15K Yellow Gold")}
+                    checked={metalTypes.includes("14K Yellow Gold")}
+                    onChange={() => toggleMetalType("14K Yellow Gold")}
                   />
-                  <label className="form-check-label text-black" htmlFor="metal2">15K Yellow Gold</label>
+                  <label className="form-check-label text-black" htmlFor="metal2">14K Yellow Gold</label>
                 </div>
               </div>
               <div className="w-100 half-divide">
@@ -982,10 +988,10 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     className="form-check-input"
                     type="checkbox"
                     id="metal3"
-                    checked={metalTypes.includes("15K Rose Gold")}
-                    onChange={() => toggleMetalType("15K Rose Gold")}
+                    checked={metalTypes.includes("14K Rose Gold")}
+                    onChange={() => toggleMetalType("14K Rose Gold")}
                   />
-                  <label className="form-check-label text-black" htmlFor="metal3">15K Rose Gold</label>
+                  <label className="form-check-label text-black" htmlFor="metal3">14K Rose Gold</label>
                 </div>
                 <div className="form-check w-50">
                   <input
@@ -1260,6 +1266,41 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 </div>
               </div>
             </div> */}
+
+            <div className="mb-3">
+              <label className="form-label text-black">Gender</label>
+              <div>
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="gender"
+                    id="genderMale"
+                    value="Male"
+                    checked={gender === "Male"}
+                    onChange={(e) => setGender(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="genderMale">
+                    Male
+                  </label>
+                </div>
+
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="gender"
+                    id="genderFemale"
+                    value="Female"
+                    checked={gender === "Female"}
+                    onChange={(e) => setGender(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="genderFemale">
+                    Female
+                  </label>
+                </div>
+              </div>
+            </div>
 
             <div className="mb-3">
               <label className="form-label text-black">Size Type</label>
