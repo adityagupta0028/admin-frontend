@@ -14,7 +14,6 @@ import {
   useGetSettingFeaturesQuery,
   useGetMotifThemesQuery,
   useGetOrnamentDetailsQuery,
-  useGetAccentStoneShapesQuery,
 } from "../../store/api/productAttributesApi";
 import { toast } from "sonner";
 
@@ -79,7 +78,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [necklaceSizeDropdownOpen, setNecklaceSizeDropdownOpen] = useState(false);
 
   // Text areas
-  const [engraving, setEngraving] = useState<string>("");
+  const [engraving, setEngraving] = useState<boolean>(false);
   const [productDetails, setProductDetails] = useState<string>("");
   const [centerStoneDetails, setCenterStoneDetails] = useState<string>("");
   const [sideStoneDetails, setSideStoneDetails] = useState<string>("");
@@ -108,7 +107,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [settingFeatures, setSettingFeatures] = useState<string[]>([]);
   const [motifThemes, setMotifThemes] = useState<string[]>([]);
   const [ornamentDetails, setOrnamentDetails] = useState<string[]>([]);
-  const [accentStoneShapes, setAccentStoneShapes] = useState<string[]>([]);
 
   // Dropdown open states for multi-select
   const [shankTreatmentsDropdownOpen, setShankTreatmentsDropdownOpen] = useState(false);
@@ -116,7 +114,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [settingFeaturesDropdownOpen, setSettingFeaturesDropdownOpen] = useState(false);
   const [motifThemesDropdownOpen, setMotifThemesDropdownOpen] = useState(false);
   const [ornamentDetailsDropdownOpen, setOrnamentDetailsDropdownOpen] = useState(false);
-  const [accentStoneShapesDropdownOpen, setAccentStoneShapesDropdownOpen] = useState(false);
 
   // Refs for dropdowns
   const shankTreatmentsDropdownRef = useRef<HTMLDivElement>(null);
@@ -124,7 +121,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const settingFeaturesDropdownRef = useRef<HTMLDivElement>(null);
   const motifThemesDropdownRef = useRef<HTMLDivElement>(null);
   const ornamentDetailsDropdownRef = useRef<HTMLDivElement>(null);
-  const accentStoneShapesDropdownRef = useRef<HTMLDivElement>(null);
 
   // Loading state
   const [createProduct, { isLoading }] = useCreateProductMutation();
@@ -141,7 +137,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const { data: settingFeaturesData } = useGetSettingFeaturesQuery();
   const { data: motifThemesData } = useGetMotifThemesQuery();
   const { data: ornamentDetailsData } = useGetOrnamentDetailsQuery();
-  const { data: accentStoneShapesData } = useGetAccentStoneShapesQuery();
 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const subCategoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -195,7 +190,12 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
   const ringSizeStatic = ["4", "5", "6", "7", "8", "9", "10", "11", "12"];
   const necklaceSizeStatic = ["16\"", "18\"", "20\"", "22\"", "24\""];
-  const caratWeightOptions = ["0.5", "1", "1.5", "2", "2.5", "3", "4", "5"];
+  //const caratWeightOptions = ["0.5", "1", "1.5", "2", "2.5", "3", "4", "5"];
+  const caratWeightOptions = [
+    "0.25","0.5","0.75","1","1.25","1.5","1.75","2","2.25","2.5","2.75","3","3.25","3.5","3.75","4","4.25","4.5","4.75","5",
+    "5.5","6","6.5","7","7.5","8","8.5","9","9.5","10","10.5","11","11.5","12","12.5","13","13.5","14","14.5","15",
+    "16","17","18","19","20","21","22","23","24","25","26","27","28","29","30"
+  ];
 
   const viewAngleOptions = [
     { id: 1, label: "Angled view", value: "Angled view" },
@@ -409,14 +409,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     );
   };
 
-  const toggleAccentStoneShape = (id: string) => {
-    setAccentStoneShapes((prev) =>
-      prev.includes(id)
-        ? prev.filter((item) => item !== id)
-        : [...prev, id]
-    );
-  };
-
   // Close dropdowns if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -453,9 +445,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       if (ornamentDetailsDropdownRef.current && !ornamentDetailsDropdownRef.current.contains(event.target as Node)) {
         setOrnamentDetailsDropdownOpen(false);
       }
-      if (accentStoneShapesDropdownRef.current && !accentStoneShapesDropdownRef.current.contains(event.target as Node)) {
-        setAccentStoneShapesDropdownOpen(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -483,7 +472,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setStones([]);
     setRingSizes([]);
     setNecklaceSizes([]);
-    setEngraving("");
+    setEngraving(false);
     setProductDetails("");
     setCenterStoneDetails("");
     setSideStoneDetails("");
@@ -504,7 +493,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setSettingFeatures([]);
     setMotifThemes([]);
     setOrnamentDetails([]);
-    setAccentStoneShapes([]);
   };
 
   // Handle form submission
@@ -572,10 +560,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       toast.error("Please select at least one Ornament Detail");
       return;
     }
-    if (accentStoneShapes.length === 0) {
-      toast.error("Please select at least one Accent Stone Shape");
-      return;
-    }
     
     // Validate metal images - all 3 view angles must have images for each metal type
     if (metalTypes.length > 0) {
@@ -641,7 +625,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       necklaceSizes.forEach((size) => formData.append("necklace_size", size));
 
       // Text areas
-      if (engraving.trim()) formData.append("engraving_text", engraving.trim());
+      formData.append("engraving_allowed", engraving.toString());
       if (productDetails.trim()) formData.append("product_details", productDetails.trim());
       if (centerStoneDetails.trim()) formData.append("center_stone_details", centerStoneDetails.trim());
       if (sideStoneDetails.trim()) formData.append("side_stone_details", sideStoneDetails.trim());
@@ -713,7 +697,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       settingFeatures.forEach((id) => formData.append("settingFeatures", id));
       motifThemes.forEach((id) => formData.append("motifThemes", id));
       ornamentDetails.forEach((id) => formData.append("ornamentDetails", id));
-      accentStoneShapes.forEach((id) => formData.append("accentStoneShapes", id));
 
       await createProduct(formData).unwrap();
       toast.success("Product created successfully!");
@@ -1209,9 +1192,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             </div>
             <div className="mb-3">
               <label className="form-label text-black">Carat Weight</label>
-              <div className="w-100 half-divide">
+              <div className="w-100" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 {caratWeightOptions.map((weight, index) => (
-                  <div className="form-check w-50" key={index}>
+                  <div className="form-check" key={index} style={{ width: 'calc(12.5% - 8px)', minWidth: '100px' }}>
                     <input
                       className="form-check-input"
                       type="checkbox"
@@ -1917,53 +1900,22 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   )}
                 </div>
               </div>
-
-              <div className="mb-3 ddr-width" ref={accentStoneShapesDropdownRef}>
-                <label className="dropdown-label text-black">Accent Stone Shapes *</label>
-                <div className={`dropdown ${accentStoneShapesDropdownOpen ? "active" : ""}`}>
-                  <div
-                    className="dropdown-select"
-                    onClick={() => setAccentStoneShapesDropdownOpen(!accentStoneShapesDropdownOpen)}
-                  >
-                    <span>
-                      {accentStoneShapes.length
-                        ? `${accentStoneShapes.length} item${accentStoneShapes.length > 1 ? 's' : ''} selected`
-                        : "Select..."}
-                    </span>
-                    <i className="dropdown-arrow"></i>
-                  </div>
-                  {accentStoneShapesDropdownOpen && (
-                    <div className="dropdown-list">
-                      {accentStoneShapesData?.data?.map((item) => (
-                        <label className="dropdown-item" key={item._id}>
-                          <input
-                            type="checkbox"
-                            value={item._id}
-                            checked={accentStoneShapes.includes(item._id)}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              toggleAccentStoneShape(item._id);
-                            }}
-                          />
-                          {item.displayName}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
-            {/* Text Areas */}
+            {/* Engraving Checkbox */}
             <div className="mb-3">
-              <label className="form-label text-black">Engraving</label>
-              <textarea
-                className="form-control"
-                rows={4}
-                placeholder="Enter Engraving..."
-                value={engraving}
-                onChange={(e) => setEngraving(e.target.value)}
-              ></textarea>
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="engraving"
+                  checked={engraving}
+                  onChange={(e) => setEngraving(e.target.checked)}
+                />
+                <label className="form-check-label text-black" htmlFor="engraving">
+                  Engraving
+                </label>
+              </div>
             </div>
             <div className="mb-3">
               <label className="form-label text-black">Product Details</label>
