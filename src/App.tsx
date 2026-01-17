@@ -5,6 +5,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { UserPage } from "./pages/UserPage";
 import { CategoryPage } from "./pages/CategoryPage";
 import { SubCategoryPage } from "./pages/SubCategoryPage";
+import { SubSubCategoryPage } from "./pages/SubSubCategoryPage";
 import { ProductPage } from "./pages/ProductPage";
 import { OrderPage } from "./pages/OrderPage";
 import { TransactionPage } from "./pages/TransactionPage";
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/user" element={<UserPage />} />
         <Route path="/category" element={<CategoryPage />} />
         <Route path="/subcategory" element={<SubCategoryPage />} />
+        <Route path="/subsubcategory" element={<SubSubCategoryPage />} />
         <Route path="/product" element={<ProductPage />} />
         <Route path="/order" element={<OrderPage />} />
         <Route path="/transaction" element={<TransactionPage />} />

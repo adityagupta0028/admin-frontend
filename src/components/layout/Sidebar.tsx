@@ -25,6 +25,7 @@ const menuItems = [
   { path: "/user", label: "Users", icon: Users },
   { path: "/category", label: "Categories", icon: FolderTree },
   { path: "/subcategory", label: "SubCategories", icon: FolderTree },
+  { path: "/subsubcategory", label: "Sub-SubCategories", icon: FolderTree },
   { path: "/product", label: "Products", icon: Package },
   { path: "/order", label: "Orders", icon: ShoppingCart },
   { path: "/transaction", label: "Transactions", icon: CreditCard },

@@ -15,6 +15,7 @@ import {
   useGetMotifThemesQuery,
   useGetOrnamentDetailsQuery,
 } from "../../store/api/productAttributesApi";
+import { useGetSubSubCategoriesQuery } from "../../store/api/subSubCategoryApi";
 import { toast } from "sonner";
 
 interface AddProductProps {
@@ -44,10 +45,12 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [selectedVideoFiles, setSelectedVideoFiles] = useState<File[]>([]);
   console.log(categories, subCategories);
   // Category and SubCategory
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
+  const [selectedSubSubCategories, setSelectedSubSubCategories] = useState<string[]>([]);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [subCategoryDropdownOpen, setSubCategoryDropdownOpen] = useState(false);
+  const [subSubCategoryDropdownOpen, setSubSubCategoryDropdownOpen] = useState(false);
   const [variants, setVariants] = useState<VariantRow[]>([]);
 
   // Metal Type
@@ -79,6 +82,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
   // Text areas
   const [engraving, setEngraving] = useState<boolean>(false);
+  const [gift, setGift] = useState<boolean>(false);
   const [productDetails, setProductDetails] = useState<string>("");
   const [centerStoneDetails, setCenterStoneDetails] = useState<string>("");
   const [sideStoneDetails, setSideStoneDetails] = useState<string>("");
@@ -140,22 +144,42 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const subCategoryDropdownRef = useRef<HTMLDivElement>(null);
+  const subSubCategoryDropdownRef = useRef<HTMLDivElement>(null);
   const diamondDropdownRef = useRef<HTMLDivElement>(null);
   const diamondQualityDropdownRef = useRef<HTMLDivElement>(null);
   const ringSizeDropdownRef = useRef<HTMLDivElement>(null);
   const necklaceSizeDropdownRef = useRef<HTMLDivElement>(null);
-  // Filter subcategories based on selected categories
+  
+  // Fetch subSubCategories - we'll filter client-side based on selected subCategories
+  // Note: The API might need to support multiple subCategoryIds, but for now we fetch all and filter
+  const { data: subSubCategoriesResponse } = useGetSubSubCategoriesQuery();
+  const allSubSubCategories = (subSubCategoriesResponse?.data as any[]) || [];
+  
+  // Filter subcategories based on selected category
   const filteredSubCategories = useMemo(() => {
-    if (selectedCategories.length === 0) {
-      return subCategories;
+    if (!selectedCategory) {
+      return [];
     }
     return subCategories.filter((subCat) => {
       const categoryId = typeof subCat?.categoryId === 'object'
         ? subCat?.categoryId?._id
         : subCat?.categoryId;
-      return selectedCategories.includes(categoryId);
+      return categoryId === selectedCategory;
     });
-  }, [subCategories, selectedCategories]);
+  }, [subCategories, selectedCategory]);
+  
+  // Filter subSubCategories based on selected subCategories
+  const filteredSubSubCategories = useMemo(() => {
+    if (selectedSubCategories.length === 0) {
+      return [];
+    }
+    return allSubSubCategories.filter((subSubCat) => {
+      const subCategoryId = typeof subSubCat?.subCategoryId === 'object'
+        ? subSubCat?.subCategoryId?._id
+        : subSubCat?.subCategoryId;
+      return selectedSubCategories.includes(subCategoryId);
+    });
+  }, [allSubSubCategories, selectedSubCategories]);
 
   // Get category/subcategory display names
   const getCategoryName = (category: any) => {
@@ -175,6 +199,24 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const getSubCategoryId = (subCategory: any) => {
     return subCategory._id || subCategory.id || subCategory.value || '';
   };
+
+  const getSubSubCategoryName = (subSubCategory: any) => {
+    if (!subSubCategory) return '';
+    return subSubCategory.title || subSubCategory.subSubCategoryName || subSubCategory.label || '';
+  };
+
+  const getSubSubCategoryId = (subSubCategory: any) => {
+    return subSubCategory._id || subSubCategory.id || subSubCategory.value || '';
+  };
+
+  // Check if selected category is one that doesn't need subcategory/sub-subcategory
+  const shouldDisableSubCategories = useMemo(() => {
+    if (!selectedCategory) return false;
+    const selectedCat = categories.find((cat) => getCategoryId(cat) === selectedCategory);
+    if (!selectedCat) return false;
+    const categoryName = getCategoryName(selectedCat);
+    return categoryName === "Engagement Rings" || categoryName === "Wedding Bands & Anniversary Bands";
+  }, [selectedCategory, categories]);
 
   const diamondOriginStatic = [
     { id: 1, label: "Natural", value: "natural" },
@@ -216,38 +258,51 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setSelectedVideoFiles(updated);
   };
 
-  // Toggle category selection
-  const toggleCategory = (category: any) => {
+  // Handle category selection (single select)
+  const handleCategorySelect = (category: any) => {
     const categoryId = getCategoryId(category);
-    setSelectedCategories((prev) => {
-      if (prev.includes(categoryId)) {
-        // Remove category and also remove subcategories that belong to this category
-        const updated = prev.filter((c) => c !== categoryId);
-        // Remove subcategories that belong to the removed category
-        setSelectedSubCategories((prevSub) => {
-          return prevSub.filter((subId) => {
-            const subCat = subCategories.find((sc) => getSubCategoryId(sc) === subId);
-            if (!subCat) return true;
-            const subCatCategoryId = typeof subCat.categoryId === 'object'
-              ? subCat.categoryId._id
-              : subCat.categoryId;
-            return subCatCategoryId !== categoryId;
-          });
-        });
-        return updated;
-      } else {
-        return [...prev, categoryId];
-      }
-    });
+    setSelectedCategory(categoryId);
+    // Clear subcategories and sub-subcategories when category changes
+    setSelectedSubCategories([]);
+    setSelectedSubSubCategories([]);
+    setCategoryDropdownOpen(false);
+    // Close subcategory dropdowns when category changes
+    setSubCategoryDropdownOpen(false);
+    setSubSubCategoryDropdownOpen(false);
   };
 
   // Toggle subcategory selection
   const toggleSubCategory = (subCategory: any) => {
     const subCategoryId = getSubCategoryId(subCategory);
-    setSelectedSubCategories((prev) =>
-      prev.includes(subCategoryId)
-        ? prev.filter((c) => c !== subCategoryId)
-        : [...prev, subCategoryId]
+    setSelectedSubCategories((prev) => {
+      const isRemoving = prev.includes(subCategoryId);
+      if (isRemoving) {
+        // Remove subcategory and also remove subSubCategories that belong to this subcategory
+        const updated = prev.filter((c) => c !== subCategoryId);
+        setSelectedSubSubCategories((prevSubSub) => {
+          return prevSubSub.filter((subSubId) => {
+            const subSubCat = allSubSubCategories.find((ssc) => getSubSubCategoryId(ssc) === subSubId);
+            if (!subSubCat) return true;
+            const subSubCatSubCategoryId = typeof subSubCat.subCategoryId === 'object'
+              ? subSubCat.subCategoryId._id
+              : subSubCat.subCategoryId;
+            return subSubCatSubCategoryId !== subCategoryId;
+          });
+        });
+        return updated;
+      } else {
+        return [...prev, subCategoryId];
+      }
+    });
+  };
+
+  // Toggle subSubCategory selection
+  const toggleSubSubCategory = (subSubCategory: any) => {
+    const subSubCategoryId = getSubSubCategoryId(subSubCategory);
+    setSelectedSubSubCategories((prev) =>
+      prev.includes(subSubCategoryId)
+        ? prev.filter((c) => c !== subSubCategoryId)
+        : [...prev, subSubCategoryId]
     );
   };
 
@@ -418,6 +473,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       if (subCategoryDropdownRef.current && !subCategoryDropdownRef.current.contains(event.target as Node)) {
         setSubCategoryDropdownOpen(false);
       }
+      if (subSubCategoryDropdownRef.current && !subSubCategoryDropdownRef.current.contains(event.target as Node)) {
+        setSubSubCategoryDropdownOpen(false);
+      }
       if (diamondDropdownRef.current && !diamondDropdownRef.current.contains(event.target as Node)) {
         setDiamondDropdownOpen(false);
       }
@@ -461,8 +519,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setDiscountedPrice("");
     setDiscountLabel("");
     setSelectedVideoFiles([]);
-    setSelectedCategories([]);
+    setSelectedCategory("");
     setSelectedSubCategories([]);
+    setSelectedSubSubCategories([]);
     setMetalTypes([]);
     setMetalImages({});
     setMetalViewAngles({});
@@ -473,6 +532,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setRingSizes([]);
     setNecklaceSizes([]);
     setEngraving(false);
+    setGift(false);
     setProductDetails("");
     setCenterStoneDetails("");
     setSideStoneDetails("");
@@ -508,13 +568,20 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     //   toast.error("Please enter a valid Discounted Price");
     //   return;
     // }
-    if (selectedCategories.length === 0) {
-      toast.error("Please select at least one Category");
+    if (!selectedCategory) {
+      toast.error("Please select a Category");
       return;
     }
-    if (selectedSubCategories.length === 0) {
-      toast.error("Please select at least one Sub Category");
-      return;
+    // Only validate subcategory and sub-subcategory if they are required
+    if (!shouldDisableSubCategories) {
+      if (selectedSubCategories.length === 0) {
+        toast.error("Please select at least one Sub Category");
+        return;
+      }
+      if (selectedSubSubCategories.length === 0) {
+        toast.error("Please select at least one Sub SubCategory");
+        return;
+      }
     }
     if (!settingConfigurations) {
       toast.error("Please select Setting Configurations");
@@ -592,9 +659,10 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       // formData.append("discounted_price", discountedPrice);
       if (discountLabel.trim()) formData.append("discount_label", discountLabel.trim());
 
-      // Categories
-      selectedCategories.forEach((catId) => formData.append("categoryId", catId));
+      // Categories (single category)
+      formData.append("categoryId", selectedCategory);
       selectedSubCategories.forEach((subCatId) => formData.append("subCategoryId", subCatId));
+      selectedSubSubCategories.forEach((subSubCatId) => formData.append("subSubCategoryId", subSubCatId));
 
       // Metal types
       metalTypes.forEach((type) => formData.append("metal_type", type));
@@ -626,6 +694,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
       // Text areas
       formData.append("engraving_allowed", engraving.toString());
+      formData.append("gift", gift.toString());
       if (productDetails.trim()) formData.append("product_details", productDetails.trim());
       if (centerStoneDetails.trim()) formData.append("center_stone_details", centerStoneDetails.trim());
       if (sideStoneDetails.trim()) formData.append("side_stone_details", sideStoneDetails.trim());
@@ -839,7 +908,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 onChange={(e) => setDiscountLabel(e.target.value)}
               />
             </div>
-            {/* Multi-Select Dropdown */}
+            {/* Single-Select Dropdown for Category */}
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={categoryDropdownRef}>
                 <label className="dropdown-label text-black">Category *</label>
@@ -849,8 +918,11 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
                   >
                     <span>
-                      {selectedCategories.length
-                        ? `${selectedCategories.length} category${selectedCategories.length > 1 ? 'ies' : ''} selected`
+                      {selectedCategory
+                        ? (() => {
+                            const selectedCat = categories.find((cat) => getCategoryId(cat) === selectedCategory);
+                            return selectedCat ? getCategoryName(selectedCat) : "Select...";
+                          })()
                         : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
@@ -862,18 +934,14 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           const categoryId = getCategoryId(category);
                           const categoryName = getCategoryName(category);
                           return (
-                            <label className="dropdown-item" key={categoryId}>
-                              <input
-                                type="checkbox"
-                                value={categoryId}
-                                checked={selectedCategories.includes(categoryId)}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  toggleCategory(category);
-                                }}
-                              />
+                            <div
+                              className={`dropdown-item ${selectedCategory === categoryId ? "selected" : ""}`}
+                              key={categoryId}
+                              onClick={() => handleCategorySelect(category)}
+                              style={{ cursor: "pointer" }}
+                            >
                               {categoryName}
-                            </label>
+                            </div>
                           );
                         })
                       ) : (
@@ -884,26 +952,36 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 </div>
               </div>
               <div className="mb-3 ddr-width" ref={subCategoryDropdownRef}>
-                <label className="dropdown-label text-black">Sub Category *</label>
-                <div className={`dropdown ${subCategoryDropdownOpen ? "active" : ""}`}>
+                <label className="dropdown-label text-black">Sub Category {!shouldDisableSubCategories ? '*' : ''}</label>
+                <div className={`dropdown ${subCategoryDropdownOpen ? "active" : ""} ${shouldDisableSubCategories ? "disabled" : ""}`}>
                   <div
                     className="dropdown-select"
                     onClick={() => {
-                      if (selectedCategories.length === 0) {
+                      if (shouldDisableSubCategories) {
+                        return;
+                      }
+                      if (!selectedCategory) {
                         toast.error("Please select a category first");
                         return;
                       }
                       setSubCategoryDropdownOpen(!subCategoryDropdownOpen);
                     }}
+                    style={{ 
+                      cursor: shouldDisableSubCategories ? 'not-allowed' : 'pointer',
+                      opacity: shouldDisableSubCategories ? 0.6 : 1,
+                      pointerEvents: shouldDisableSubCategories ? 'none' : 'auto'
+                    }}
                   >
                     <span>
-                      {selectedSubCategories.length
-                        ? `${selectedSubCategories.length} subcategory${selectedSubCategories.length > 1 ? 'ies' : ''} selected`
+                      {shouldDisableSubCategories 
+                        ? "Not required for this category"
+                        : selectedSubCategories.length
+                        ? `${selectedSubCategories.length} subcategor${selectedSubCategories.length > 1 ? 'ies' : ''} selected`
                         : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
                   </div>
-                  {subCategoryDropdownOpen && (
+                  {subCategoryDropdownOpen && !shouldDisableSubCategories && (
                     <div className="dropdown-list">
                       {filteredSubCategories.length > 0 ? (
                         filteredSubCategories.map((subCategory) => {
@@ -926,9 +1004,71 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                         })
                       ) : (
                         <div className="dropdown-item">
-                          {selectedCategories.length === 0
+                          {!selectedCategory
                             ? "Please select a category first"
-                            : "No subcategories available for selected categories"}
+                            : "No subcategories available for selected category"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="mb-3 ddr-width" ref={subSubCategoryDropdownRef}>
+                <label className="dropdown-label text-black">Sub SubCategory {!shouldDisableSubCategories ? '*' : ''}</label>
+                <div className={`dropdown ${subSubCategoryDropdownOpen ? "active" : ""} ${shouldDisableSubCategories ? "disabled" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => {
+                      if (shouldDisableSubCategories) {
+                        return;
+                      }
+                      if (selectedSubCategories.length === 0) {
+                        toast.error("Please select a sub category first");
+                        return;
+                      }
+                      setSubSubCategoryDropdownOpen(!subSubCategoryDropdownOpen);
+                    }}
+                    style={{ 
+                      cursor: shouldDisableSubCategories ? 'not-allowed' : 'pointer',
+                      opacity: shouldDisableSubCategories ? 0.6 : 1,
+                      pointerEvents: shouldDisableSubCategories ? 'none' : 'auto'
+                    }}
+                  >
+                    <span>
+                      {shouldDisableSubCategories 
+                        ? "Not required for this category"
+                        : selectedSubSubCategories.length
+                        ? `${selectedSubSubCategories.length} sub-subcategory${selectedSubSubCategories.length > 1 ? 'ies' : ''} selected`
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
+                  </div>
+                  {subSubCategoryDropdownOpen && !shouldDisableSubCategories && (
+                    <div className="dropdown-list">
+                      {filteredSubSubCategories.length > 0 ? (
+                        filteredSubSubCategories.map((subSubCategory) => {
+                          const subSubCategoryId = getSubSubCategoryId(subSubCategory);
+                          const subSubCategoryName = getSubSubCategoryName(subSubCategory);
+                          return (
+                            <label className="dropdown-item" key={subSubCategoryId}>
+                              <input
+                                type="checkbox"
+                                value={subSubCategoryId}
+                                checked={selectedSubSubCategories.includes(subSubCategoryId)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  toggleSubSubCategory(subSubCategory);
+                                }}
+                              />
+                              {subSubCategoryName}
+                            </label>
+                          );
+                        })
+                      ) : (
+                        <div className="dropdown-item">
+                          {selectedSubCategories.length === 0
+                            ? "Please select a sub category first"
+                            : "No sub-subcategories available for selected subcategories"}
                         </div>
                       )}
                     </div>
@@ -1914,6 +2054,21 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 />
                 <label className="form-check-label text-black" htmlFor="engraving">
                   Engraving
+                </label>
+              </div>
+            </div>
+            {/* Gift Checkbox */}
+            <div className="mb-3">
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="gift"
+                  checked={gift}
+                  onChange={(e) => setGift(e.target.checked)}
+                />
+                <label className="form-check-label text-black" htmlFor="gift">
+                  Gift
                 </label>
               </div>
             </div>

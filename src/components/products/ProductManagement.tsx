@@ -88,7 +88,7 @@ interface ProductFormData {
   matching_band_product_id?: string | null;
   product_type?: string;
   collection_name?: string;
-  categoryId: string[]; // multiple
+  categoryId: string; // single select
   subCategoryId: string[]; // multiple
   product_details?: string;
   center_stone_details?: string;
@@ -157,7 +157,7 @@ export function ProductManagement() {
       metal_type: [],
       diamond_origin: [],
       diamond_quality: [],
-      categoryId: [],
+      categoryId: "",
       subCategoryId: [],
       carat_weight: [],
       ring_size: [],
@@ -167,17 +167,17 @@ export function ProductManagement() {
   });
 
   const watchedImages = watch("images");
-  const watchedCategoryIds = watch("categoryId");
 
-  // When categoryId array changes, set selectedCategoryId (for subcategory API) and reset subcategories when empty
+  // When categoryId changes, set selectedCategoryId (for subcategory API) and reset subcategories when empty
+  const watchedCategoryId = watch("categoryId");
   useEffect(() => {
-    if (watchedCategoryIds && watchedCategoryIds.length > 0) {
-      setSelectedCategoryId(watchedCategoryIds[0]);
+    if (watchedCategoryId) {
+      setSelectedCategoryId(watchedCategoryId);
     } else {
       setSelectedCategoryId("");
       setValue("subCategoryId", []);
     }
-  }, [watchedCategoryIds, setValue]);
+  }, [watchedCategoryId, setValue]);
 
   // Image previews
   useEffect(() => {
@@ -268,9 +268,9 @@ export function ProductManagement() {
       if (data.collection_name)
         formData.append("collection_name", data.collection_name);
 
-      (data.categoryId || []).forEach((catId) =>
-        formData.append("categoryId", catId)
-      );
+      if (data.categoryId) {
+        formData.append("categoryId", data.categoryId);
+      }
       (data.subCategoryId || []).forEach((subCatId) =>
         formData.append("subCategoryId", subCatId)
       );
@@ -306,12 +306,12 @@ export function ProductManagement() {
   const handleEditClick = (product: Product) => {
     setSelectedProduct(product);
 
-    // Category / Subcategory ids
-    const categoryIds = Array.isArray(product.categoryId)
-      ? product.categoryId.map((cat: any) =>
-          typeof cat === "string" ? cat : cat._id
-        )
-      : [typeof product.categoryId === "string" ? product.categoryId : (product.categoryId as any)._id];
+    // Category / Subcategory ids (single category now)
+    const categoryId = Array.isArray(product.categoryId)
+      ? (product.categoryId.length > 0 
+          ? (typeof product.categoryId[0] === "string" ? product.categoryId[0] : product.categoryId[0]._id)
+          : "")
+      : (typeof product.categoryId === "string" ? product.categoryId : (product.categoryId as any)?._id || "");
 
     const subCategoryIds = Array.isArray(product.subCategoryId)
       ? product.subCategoryId.map((sub: any) =>
@@ -395,7 +395,7 @@ export function ProductManagement() {
     setValue("center_stone_details", product.center_stone_details || "");
     setValue("side_stone_details", product.side_stone_details || "");
     setValue("stone_details", product.stone_details || "");
-    setValue("categoryId", categoryIds);
+    setValue("categoryId", categoryId);
     setValue("subCategoryId", subCategoryIds);
     setValue("status", product.status);
     if (product.tags)
@@ -404,7 +404,7 @@ export function ProductManagement() {
         Array.isArray(product.tags) ? product.tags.join(", ") : product.tags
       );
 
-    setSelectedCategoryId(categoryIds[0] || "");
+    setSelectedCategoryId(categoryId);
 
     // Existing images
     if (product.images && product.images.length > 0) {
@@ -503,9 +503,9 @@ export function ProductManagement() {
       if (data.collection_name !== undefined)
         formData.append("collection_name", data.collection_name || "");
 
-      (data.categoryId || []).forEach((catId) =>
-        formData.append("categoryId", catId)
-      );
+      if (data.categoryId) {
+        formData.append("categoryId", data.categoryId);
+      }
       (data.subCategoryId || []).forEach((subCatId) =>
         formData.append("subCategoryId", subCatId)
       );
@@ -926,31 +926,34 @@ export function ProductManagement() {
                 </div>
               </div>
 
-              {/* Category & SubCategory - Multiple */}
+              {/* Category & SubCategory */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Category */}
+                {/* Category - Single Select */}
                 <div className="grid gap-2">
-                  <Label>Category (Multiple)</Label>
+                  <Label>Category *</Label>
                   <Controller
                     control={control}
                     name="categoryId"
                     render={({ field }) => (
-                      <MultiSelect
-                        options={categories.map((cat: any) => ({
-                          label: cat.categoryName,
-                          value: cat._id,
-                        }))}
-                        selected={field.value}
-                        onSelectionChange={(selected) => {
-                          field.onChange(selected);
-                          if (selected.length === 0) {
-                            setSelectedCategoryId("");
-                            setValue("subCategoryId", []);
-                          }
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedCategoryId(value);
+                          setValue("subCategoryId", []);
                         }}
-                        placeholder="Select categories..."
-                        disabled={categories.length === 0}
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat: any) => (
+                            <SelectItem key={cat._id} value={cat._id}>
+                              {cat.categoryName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   />
                 </div>
@@ -970,14 +973,12 @@ export function ProductManagement() {
                         selected={field.value}
                         onSelectionChange={field.onChange}
                         placeholder={
-                          !watchedCategoryIds ||
-                          watchedCategoryIds.length === 0
+                          !watchedCategoryId
                             ? "Select category first"
                             : "Select subcategories..."
                         }
                         disabled={
-                          !watchedCategoryIds ||
-                          watchedCategoryIds.length === 0 ||
+                          !watchedCategoryId ||
                           subCategories.length === 0
                         }
                       />
