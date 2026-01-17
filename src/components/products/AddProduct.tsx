@@ -69,6 +69,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   // Carat Weight
   const [caratWeights, setCaratWeights] = useState<string[]>([]);
 
+  // Stone
+  const [stones, setStones] = useState<string[]>([]);
+
   // Ring Size and Necklace Size
   const [ringSizes, setRingSizes] = useState<string[]>([]);
   const [necklaceSizes, setNecklaceSizes] = useState<string[]>([]);
@@ -84,6 +87,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [sizeType, setSizeType] = useState<"ring" | "necklace">("ring");
   // Gender
   const [gender, setGender] = useState<string>("Male");
+  // Product Specials
+  const [productSpecials, setProductSpecials] = useState<string>("");
   // Status
   const [status, setStatus] = useState<string>("active");
 
@@ -94,6 +99,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [bandProfileShapes, setBandProfileShapes] = useState<string>("");
   const [bandWidthCategories, setBandWidthCategories] = useState<string>("");
   const [bandFits, setBandFits] = useState<string>("");
+  // Collections
+  const [collections, setCollections] = useState<string>("");
 
   // Multi-select dropdown fields
   const [shankTreatments, setShankTreatments] = useState<string[]>([]);
@@ -177,7 +184,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const diamondOriginStatic = [
     { id: 1, label: "Natural", value: "natural" },
     { id: 2, label: "Lab Grown", value: "lab grown" },
-    { id: 3, label: "Other", value: "other" },
   ];
 
   const diamondQualityStatic = [
@@ -353,6 +359,15 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     );
   };
 
+  // Toggle stone
+  const toggleStone = (stone: string) => {
+    setStones((prev) =>
+      prev.includes(stone)
+        ? prev.filter((s) => s !== stone)
+        : [...prev, stone]
+    );
+  };
+
   // Toggle multi-select dropdown fields
   const toggleShankTreatment = (id: string) => {
     setShankTreatments((prev) =>
@@ -465,6 +480,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setDiamondOrigins([]);
     setDiamondQualities([]);
     setCaratWeights([]);
+    setStones([]);
     setRingSizes([]);
     setNecklaceSizes([]);
     setEngraving("");
@@ -473,6 +489,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setSideStoneDetails("");
     setStoneDetails("");
     setGender("Male");
+    setProductSpecials("");
     setStatus("active");
     // Reset new fields
     setSettingConfigurations("");
@@ -481,6 +498,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setBandProfileShapes("");
     setBandWidthCategories("");
     setBandFits("");
+    setCollections("");
     setShankTreatments([]);
     setStyles([]);
     setSettingFeatures([]);
@@ -615,6 +633,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       diamondQualities.forEach((quality) => formData.append("diamond_quality", quality));
       caratWeights.forEach((weight) => formData.append("carat_weight", weight));
 
+      // Stone
+      stones.forEach((stone) => formData.append("stone", stone));
+
       // Sizes
       ringSizes.forEach((size) => formData.append("ring_size", size));
       necklaceSizes.forEach((size) => formData.append("necklace_size", size));
@@ -629,8 +650,19 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       // Gender
       formData.append("gender", gender);
 
+      // Product Specials
+      if (productSpecials) {
+        formData.append("productSpecials", productSpecials);
+      }
+
       // Status
       formData.append("status", status);
+      
+      // Collections
+      if (collections) {
+        formData.append("collections", collections);
+      }
+
       if (variants.length > 0) {
         const cleaned = variants
           .filter(v => v.price && v.discounted_price)
@@ -1195,6 +1227,62 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
               </div>
             </div>
 
+            <div className="mb-3">
+              <label className="form-label text-black">Stone</label>
+              <div className="w-100 half-divide">
+                <div className="form-check w-50">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="stone-diamond"
+                    checked={stones.includes("Diamond")}
+                    onChange={() => toggleStone("Diamond")}
+                  />
+                  <label className="form-check-label text-black" htmlFor="stone-diamond">
+                    Diamond
+                  </label>
+                </div>
+                <div className="form-check w-50">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="stone-color-diamond"
+                    checked={stones.includes("Color Diamond")}
+                    onChange={() => toggleStone("Color Diamond")}
+                  />
+                  <label className="form-check-label text-black" htmlFor="stone-color-diamond">
+                    Color Diamond
+                  </label>
+                </div>
+              </div>
+              <div className="w-100 half-divide">
+                <div className="form-check w-50">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="stone-gemstone"
+                    checked={stones.includes("Gemstone")}
+                    onChange={() => toggleStone("Gemstone")}
+                  />
+                  <label className="form-check-label text-black" htmlFor="stone-gemstone">
+                    Gemstone
+                  </label>
+                </div>
+                <div className="form-check w-50">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="stone-none"
+                    checked={stones.includes("None")}
+                    onChange={() => toggleStone("None")}
+                  />
+                  <label className="form-check-label text-black" htmlFor="stone-none">
+                    None
+                  </label>
+                </div>
+              </div>
+            </div>
+
             {/* <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={ringSizeDropdownRef}>
                 <label className="dropdown-label text-black">Ring Size</label>
@@ -1297,6 +1385,106 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   />
                   <label className="form-check-label text-black" htmlFor="genderFemale">
                     Female
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-black">Product Specials</label>
+              <div>
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="productSpecials"
+                    id="productSpecialsNewArrivals"
+                    value="New Arrivals"
+                    checked={productSpecials === "New Arrivals"}
+                    onChange={(e) => setProductSpecials(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="productSpecialsNewArrivals">
+                    New Arrivals
+                  </label>
+                </div>
+
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="productSpecials"
+                    id="productSpecialsTopSellers"
+                    value="Top Sellers"
+                    checked={productSpecials === "Top Sellers"}
+                    onChange={(e) => setProductSpecials(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="productSpecialsTopSellers">
+                    Top Sellers
+                  </label>
+                </div>
+
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="productSpecials"
+                    id="productSpecialsFeaturedRings"
+                    value="Featured Rings"
+                    checked={productSpecials === "Featured Rings"}
+                    onChange={(e) => setProductSpecials(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="productSpecialsFeaturedRings">
+                    Featured Rings
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-black">Collections</label>
+              <div>
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="collections"
+                    id="collectionsCartier"
+                    value="Cartier"
+                    checked={collections === "Cartier"}
+                    onChange={(e) => setCollections(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="collectionsCartier">
+                    Cartier
+                  </label>
+                </div>
+
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="collections"
+                    id="collectionsVersace"
+                    value="Versace"
+                    checked={collections === "Versace"}
+                    onChange={(e) => setCollections(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="collectionsVersace">
+                    Versace
+                  </label>
+                </div>
+
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="collections"
+                    id="collectionsCK"
+                    value="CK"
+                    checked={collections === "CK"}
+                    onChange={(e) => setCollections(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="collectionsCK">
+                    CK
                   </label>
                 </div>
               </div>
