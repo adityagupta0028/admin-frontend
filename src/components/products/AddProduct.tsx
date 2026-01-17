@@ -1023,11 +1023,11 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   <input
                     className="form-check-input"
                     type="checkbox"
-                    id="metal1"
+                    id="metal7"
                     checked={metalTypes.includes("Platinum")}
                     onChange={() => toggleMetalType("Platinum")}
                   />
-                  <label className="form-check-label text-black" htmlFor="metal1">Platinum</label>
+                  <label className="form-check-label text-black" htmlFor="metal7">Platinum</label>
                 </div>
               </div>
             </div>
