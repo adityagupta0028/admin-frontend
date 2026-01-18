@@ -324,6 +324,152 @@ export function FilterManagement() {
         <p className="text-gray-500 mt-1">Manage which filters are visible on the customer side</p>
       </div>
 
+      {/* Menu Management Section */}
+      <Card className="shadow-sm mb-12">
+        <CardHeader>
+          <CardTitle className="text-lg">Menu Management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Select Area Label */}
+          <div className="mb-4">
+            <p className="text-sm text-gray-600">Select area</p>
+          </div>
+
+          {/* Horizontal Button Tabs */}
+          <div className="flex gap-2 mb-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setActiveMenuTab("main-menu");
+                setSelectedMenuItem(null);
+                setSelectedFilters({
+                  settingConfigurations: new Set(),
+                  shankConfigurations: new Set(),
+                  holdingMethods: new Set(),
+                  bandProfileShapes: new Set(),
+                  bandWidthCategories: new Set(),
+                  bandFits: new Set(),
+                  shankTreatments: new Set(),
+                  styles: new Set(),
+                  settingFeatures: new Set(),
+                  motifThemes: new Set(),
+                  ornamentDetails: new Set(),
+                });
+                setHasChanges(false);
+              }}
+              className={`flex-1 ${
+                activeMenuTab === "main-menu"
+                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
+              style={
+                activeMenuTab === "main-menu"
+                  ? { backgroundColor: "#dc2626", color: "#ffffff" }
+                  : {}
+              }
+            >
+              Main Menu
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setActiveMenuTab("side-menu");
+                setSelectedMenuItem(null);
+                setSelectedFilters({
+                  settingConfigurations: new Set(),
+                  shankConfigurations: new Set(),
+                  holdingMethods: new Set(),
+                  bandProfileShapes: new Set(),
+                  bandWidthCategories: new Set(),
+                  bandFits: new Set(),
+                  shankTreatments: new Set(),
+                  styles: new Set(),
+                  settingFeatures: new Set(),
+                  motifThemes: new Set(),
+                  ornamentDetails: new Set(),
+                });
+                setHasChanges(false);
+              }}
+              className={`flex-1 ${
+                activeMenuTab === "side-menu"
+                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
+              style={
+                activeMenuTab === "side-menu"
+                  ? { backgroundColor: "#dc2626", color: "#ffffff" }
+                  : {}
+              }
+            >
+              Side Menu
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setActiveMenuTab("hero-menu");
+                setSelectedMenuItem(null);
+                setSelectedFilters({
+                  settingConfigurations: new Set(),
+                  shankConfigurations: new Set(),
+                  holdingMethods: new Set(),
+                  bandProfileShapes: new Set(),
+                  bandWidthCategories: new Set(),
+                  bandFits: new Set(),
+                  shankTreatments: new Set(),
+                  styles: new Set(),
+                  settingFeatures: new Set(),
+                  motifThemes: new Set(),
+                  ornamentDetails: new Set(),
+                });
+                setHasChanges(false);
+              }}
+              className={`flex-1 ${
+                activeMenuTab === "hero-menu"
+                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
+              style={
+                activeMenuTab === "hero-menu"
+                  ? { backgroundColor: "#dc2626", color: "#ffffff" }
+                  : {}
+              }
+            >
+              Hero Menu
+            </Button>
+          </div>
+
+          {/* Table Content based on active tab */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">#</TableHead>
+                <TableHead>Menu Item</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {getCurrentMenuItems().map((item, index) => (
+                <TableRow 
+                  key={index}
+                  onClick={() => {
+                    if (activeMenuTab === "main-menu" || activeMenuTab === "side-menu") {
+                      handleMenuItemClick(item);
+                    }
+                  }}
+                  className={`cursor-pointer hover:bg-gray-50 ${
+                    selectedMenuItem === item && (activeMenuTab === "main-menu" || activeMenuTab === "side-menu")
+                      ? "bg-red-50 border-l-4 border-red-600"
+                      : ""
+                  }`}
+                >
+                  <TableCell className="font-medium">{index + 1}</TableCell>
+                  <TableCell>{item}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       {/* Filter Settings Card */}
       <Card className="shadow-sm">
         <CardHeader>
@@ -481,153 +627,6 @@ export function FilterManagement() {
               </div>
             </>
           )}
-
-        </CardContent>
-      </Card>
-
-      {/* Menu Management Section */}
-      <Card className="shadow-sm mt-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Menu Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Select Area Label */}
-          <div className="mb-4">
-            <p className="text-sm text-gray-600">Select area</p>
-          </div>
-
-          {/* Horizontal Button Tabs */}
-          <div className="flex gap-2 mb-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setActiveMenuTab("main-menu");
-                setSelectedMenuItem(null);
-                setSelectedFilters({
-                  settingConfigurations: new Set(),
-                  shankConfigurations: new Set(),
-                  holdingMethods: new Set(),
-                  bandProfileShapes: new Set(),
-                  bandWidthCategories: new Set(),
-                  bandFits: new Set(),
-                  shankTreatments: new Set(),
-                  styles: new Set(),
-                  settingFeatures: new Set(),
-                  motifThemes: new Set(),
-                  ornamentDetails: new Set(),
-                });
-                setHasChanges(false);
-              }}
-              className={`flex-1 ${
-                activeMenuTab === "main-menu"
-                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
-              style={
-                activeMenuTab === "main-menu"
-                  ? { backgroundColor: "#dc2626", color: "#ffffff" }
-                  : {}
-              }
-            >
-              Main Menu
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setActiveMenuTab("side-menu");
-                setSelectedMenuItem(null);
-                setSelectedFilters({
-                  settingConfigurations: new Set(),
-                  shankConfigurations: new Set(),
-                  holdingMethods: new Set(),
-                  bandProfileShapes: new Set(),
-                  bandWidthCategories: new Set(),
-                  bandFits: new Set(),
-                  shankTreatments: new Set(),
-                  styles: new Set(),
-                  settingFeatures: new Set(),
-                  motifThemes: new Set(),
-                  ornamentDetails: new Set(),
-                });
-                setHasChanges(false);
-              }}
-              className={`flex-1 ${
-                activeMenuTab === "side-menu"
-                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
-              style={
-                activeMenuTab === "side-menu"
-                  ? { backgroundColor: "#dc2626", color: "#ffffff" }
-                  : {}
-              }
-            >
-              Side Menu
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setActiveMenuTab("hero-menu");
-                setSelectedMenuItem(null);
-                setSelectedFilters({
-                  settingConfigurations: new Set(),
-                  shankConfigurations: new Set(),
-                  holdingMethods: new Set(),
-                  bandProfileShapes: new Set(),
-                  bandWidthCategories: new Set(),
-                  bandFits: new Set(),
-                  shankTreatments: new Set(),
-                  styles: new Set(),
-                  settingFeatures: new Set(),
-                  motifThemes: new Set(),
-                  ornamentDetails: new Set(),
-                });
-                setHasChanges(false);
-              }}
-              className={`flex-1 ${
-                activeMenuTab === "hero-menu"
-                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
-              style={
-                activeMenuTab === "hero-menu"
-                  ? { backgroundColor: "#dc2626", color: "#ffffff" }
-                  : {}
-              }
-            >
-              Hero Menu
-            </Button>
-          </div>
-
-          {/* Table Content based on active tab */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]">#</TableHead>
-                <TableHead>Menu Item</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {getCurrentMenuItems().map((item, index) => (
-                <TableRow 
-                  key={index}
-                  onClick={() => {
-                    if (activeMenuTab === "main-menu" || activeMenuTab === "side-menu") {
-                      handleMenuItemClick(item);
-                    }
-                  }}
-                  className={`cursor-pointer hover:bg-gray-50 ${
-                    selectedMenuItem === item && (activeMenuTab === "main-menu" || activeMenuTab === "side-menu")
-                      ? "bg-red-50 border-l-4 border-red-600"
-                      : ""
-                  }`}
-                >
-                  <TableCell className="font-medium">{index + 1}</TableCell>
-                  <TableCell>{item}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
     </div>
