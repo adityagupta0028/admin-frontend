@@ -2991,3 +2991,10 @@ div.w-64 nav a:not(.active):not([aria-current="page"]):not([class*="bg-gradient"
 div[class*="w-64"] nav a:not(.active):not([class*="bg-gradient"]) svg {
   color: #6b7280 !important; /* gray-500 for inactive icons */
 }
+.add-buttom-column{
+  background-color: red;
+}
+.add-blog-buttom{
+  background-color: red;
+  
+}

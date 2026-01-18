@@ -14,6 +14,7 @@ import { FAQPage } from "./pages/FAQPage";
 import { CMSPage } from "./pages/CMSPage";
 import { SettingPage } from "./pages/SettingPage";
 import { FilterPage } from "./pages/FilterPage";
+import { HeroMenuPage } from "./pages/HeroMenuPage";
 import { Toaster } from "./components/ui/sonner";
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/cms" element={<CMSPage />} />
         <Route path="/setting" element={<SettingPage />} />
         <Route path="/filter" element={<FilterPage />} />
+        <Route path="/hero-menu" element={<HeroMenuPage />} />
         
         {/* Redirect any unknown routes to dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

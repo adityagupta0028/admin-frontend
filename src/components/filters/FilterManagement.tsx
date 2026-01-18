@@ -27,6 +27,25 @@ import {
   useGetOrnamentDetailsQuery,
   ProductAttribute
 } from "../../store/api/productAttributesApi";
+import {
+  useGetHeroMenuByCategoryQuery,
+  useCreateHeroMenuMutation,
+  useUpdateHeroMenuMutation,
+  HeroMenu,
+  HeroMenuColumn,
+  HeroMenuHeader,
+  HeroMenuBlog,
+} from "../../store/api/heroMenuApi";
+import { useGetCategoriesQuery, Category } from "../../store/api/categoryApi";
+import { Input } from "../ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 // Menu items data
@@ -129,12 +148,84 @@ export function FilterManagement() {
     ornamentDetails: new Set(),
   });
 
+  // Hero Menu state
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [activeColumnTab, setActiveColumnTab] = useState<number>(0);
+  const [heroMenuColumns, setHeroMenuColumns] = useState<HeroMenuColumn[]>([
+    { columnIndex: 0, headers: [] },
+    { columnIndex: 1, headers: [] },
+    { columnIndex: 2, headers: [] },
+    { columnIndex: 3, headers: [] },
+  ]);
+  const [heroMenuHasChanges, setHeroMenuHasChanges] = useState(false);
+
+  // Hero Menu queries
+  const { data: categoriesResponse } = useGetCategoriesQuery();
+  const categories = (categoriesResponse?.data as Category[]) || [];
+
+  const { data: heroMenuResponse, refetch: refetchHeroMenu } = useGetHeroMenuByCategoryQuery(
+    selectedCategoryId,
+    { skip: !selectedCategoryId || activeMenuTab !== "hero-menu" }
+  );
+
+  const [createHeroMenu, { isLoading: isCreatingHeroMenu }] = useCreateHeroMenuMutation();
+  const [updateHeroMenu, { isLoading: isUpdatingHeroMenu }] = useUpdateHeroMenuMutation();
+
   // Get menu filter settings when menu item is selected
   const menuName = activeMenuTab === "main-menu" ? "Main Menu" : activeMenuTab === "side-menu" ? "Side Menu" : "Hero Menu";
   const { data: menuFilterSettingsResponse, refetch: refetchMenuFilterSettings } = useGetMenuFilterSettingsQuery(
     { menuName, menuItem: selectedMenuItem || "" },
     { skip: !selectedMenuItem || activeMenuTab === "hero-menu" }
   );
+
+  // Load hero menu data when category is selected or data is fetched
+  useEffect(() => {
+    if (activeMenuTab !== "hero-menu" || !selectedCategoryId) {
+      return;
+    }
+
+    // Always reset first when category changes
+    if (heroMenuResponse?.data) {
+      const heroMenu = heroMenuResponse.data as HeroMenu;
+      
+      // Verify the response is for the current category
+      const responseCategoryId = typeof heroMenu.categoryId === 'string' 
+        ? heroMenu.categoryId 
+        : (heroMenu.categoryId as any)?._id || heroMenu.categoryId;
+
+      if (responseCategoryId === selectedCategoryId && heroMenu.columns && heroMenu.columns.length === 4) {
+        // Create a deep copy to avoid read-only property errors
+        const clonedColumns = heroMenu.columns.map((col) => ({
+          columnIndex: col.columnIndex,
+          headers: col.headers.map((header) => ({
+            title: header.title,
+            variables: { ...header.variables },
+            blogs: header.blogs ? header.blogs.map((blog) => ({ ...blog })) : []
+          }))
+        }));
+        setHeroMenuColumns(clonedColumns);
+        setHeroMenuHasChanges(false);
+      } else {
+        // Data doesn't match current category, reset
+        setHeroMenuColumns([
+          { columnIndex: 0, headers: [] },
+          { columnIndex: 1, headers: [] },
+          { columnIndex: 2, headers: [] },
+          { columnIndex: 3, headers: [] },
+        ]);
+        setHeroMenuHasChanges(false);
+      }
+    } else {
+      // No data for this category, reset to empty
+      setHeroMenuColumns([
+        { columnIndex: 0, headers: [] },
+        { columnIndex: 1, headers: [] },
+        { columnIndex: 2, headers: [] },
+        { columnIndex: 3, headers: [] },
+      ]);
+      setHeroMenuHasChanges(false);
+    }
+  }, [heroMenuResponse, selectedCategoryId, activeMenuTab]);
 
   useEffect(() => {
     if (filters.length > 0) {
@@ -283,6 +374,262 @@ export function FilterManagement() {
     setHasChanges(false);
   };
 
+  // Hero Menu handlers
+  const handleCategoryChange = (categoryId: string) => {
+    // Reset columns immediately when category changes
+    setHeroMenuColumns([
+      { columnIndex: 0, headers: [] },
+      { columnIndex: 1, headers: [] },
+      { columnIndex: 2, headers: [] },
+      { columnIndex: 3, headers: [] },
+    ]);
+    setSelectedCategoryId(categoryId);
+    setActiveColumnTab(0);
+    setHeroMenuHasChanges(false);
+  };
+
+  const addHeroMenuHeader = (columnIndex: number) => {
+    const newHeader: HeroMenuHeader = {
+      title: "",
+      variables: {},
+      blogs: [],
+    };
+    setHeroMenuColumns((prev) => {
+      const newColumns = prev.map((col, idx) => {
+        if (idx === columnIndex) {
+          return {
+            ...col,
+            headers: [...col.headers, newHeader]
+          };
+        }
+        return col;
+      });
+      return newColumns;
+    });
+    setHeroMenuHasChanges(true);
+  };
+
+  const removeHeroMenuHeader = (columnIndex: number, headerIndex: number) => {
+    setHeroMenuColumns((prev) => {
+      const newColumns = prev.map((col, idx) => {
+        if (idx === columnIndex) {
+          return {
+            ...col,
+            headers: col.headers.filter((_, hIdx) => hIdx !== headerIndex)
+          };
+        }
+        return col;
+      });
+      return newColumns;
+    });
+    setHeroMenuHasChanges(true);
+  };
+
+  const updateHeroMenuHeaderTitle = (columnIndex: number, headerIndex: number, title: string) => {
+    setHeroMenuColumns((prev) => {
+      const newColumns = prev.map((col, idx) => {
+        if (idx === columnIndex) {
+          return {
+            ...col,
+            headers: col.headers.map((header, hIdx) => {
+              if (hIdx === headerIndex) {
+                return {
+                  ...header,
+                  title: title
+                };
+              }
+              return header;
+            })
+          };
+        }
+        return col;
+      });
+      return newColumns;
+    });
+    setHeroMenuHasChanges(true);
+  };
+
+  const toggleHeroMenuVariable = (
+    columnIndex: number,
+    headerIndex: number,
+    variableType: keyof HeroMenuHeader['variables'],
+    variableId: string
+  ) => {
+    setHeroMenuColumns((prev) => {
+      const newColumns = prev.map((col, idx) => {
+        if (idx === columnIndex) {
+          return {
+            ...col,
+            headers: col.headers.map((header, hIdx) => {
+              if (hIdx === headerIndex) {
+                const currentArray = header.variables[variableType] || [];
+                const index = currentArray.indexOf(variableId);
+                const newArray = [...currentArray];
+                
+                if (index > -1) {
+                  newArray.splice(index, 1);
+                } else {
+                  newArray.push(variableId);
+                }
+                
+                return {
+                  ...header,
+                  variables: {
+                    ...header.variables,
+                    [variableType]: newArray
+                  }
+                };
+              }
+              return header;
+            })
+          };
+        }
+        return col;
+      });
+      return newColumns;
+    });
+    setHeroMenuHasChanges(true);
+  };
+
+  const isHeroMenuVariableSelected = (
+    columnIndex: number,
+    headerIndex: number,
+    variableType: keyof HeroMenuHeader['variables'],
+    variableId: string
+  ): boolean => {
+    const header = heroMenuColumns[columnIndex]?.headers[headerIndex];
+    if (!header || !header.variables[variableType]) {
+      return false;
+    }
+    return (header.variables[variableType] || []).includes(variableId);
+  };
+
+  const handleSaveHeroMenu = async () => {
+    try {
+      if (!selectedCategoryId) {
+        toast.error("Please select a category");
+        return;
+      }
+
+      const heroMenu = heroMenuResponse?.data as HeroMenu | undefined;
+      
+      if (heroMenu?._id) {
+        await updateHeroMenu({
+          id: heroMenu._id,
+          data: { columns: heroMenuColumns },
+        }).unwrap();
+        toast.success("Hero Menu updated successfully!");
+      } else {
+        await createHeroMenu({
+          categoryId: selectedCategoryId,
+          columns: heroMenuColumns,
+        }).unwrap();
+        toast.success("Hero Menu created successfully!");
+      }
+      
+      setHeroMenuHasChanges(false);
+      refetchHeroMenu();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to save Hero Menu");
+    }
+  };
+
+  const handleCancelHeroMenu = () => {
+    if (heroMenuResponse?.data) {
+      const heroMenu = heroMenuResponse.data as HeroMenu;
+      if (heroMenu.columns && heroMenu.columns.length === 4) {
+        const clonedColumns = heroMenu.columns.map((col) => ({
+          columnIndex: col.columnIndex,
+          headers: col.headers.map((header) => ({
+            title: header.title,
+            variables: { ...header.variables },
+            blogs: header.blogs ? header.blogs.map((blog) => ({ ...blog })) : []
+          }))
+        }));
+        setHeroMenuColumns(clonedColumns);
+      }
+    } else {
+      setHeroMenuColumns([
+        { columnIndex: 0, headers: [] },
+        { columnIndex: 1, headers: [] },
+        { columnIndex: 2, headers: [] },
+        { columnIndex: 3, headers: [] },
+      ]);
+    }
+    setHeroMenuHasChanges(false);
+  };
+
+  const addBlog = (columnIndex: number, headerIndex: number) => {
+    setHeroMenuColumns((prev) => {
+      return prev.map((col, idx) => {
+        if (idx === columnIndex) {
+          return {
+            ...col,
+            headers: col.headers.map((header, hIdx) => {
+              if (hIdx === headerIndex) {
+                return {
+                  ...header,
+                  blogs: [...(header.blogs || []), { title: "", link: "" }]
+                };
+              }
+              return header;
+            })
+          };
+        }
+        return col;
+      });
+    });
+    setHeroMenuHasChanges(true);
+  };
+
+  const removeBlog = (columnIndex: number, headerIndex: number, blogIndex: number) => {
+    setHeroMenuColumns((prev) => {
+      return prev.map((col, idx) => {
+        if (idx === columnIndex) {
+          return {
+            ...col,
+            headers: col.headers.map((header, hIdx) => {
+              if (hIdx === headerIndex) {
+                return {
+                  ...header,
+                  blogs: (header.blogs || []).filter((_, bIdx) => bIdx !== blogIndex)
+                };
+              }
+              return header;
+            })
+          };
+        }
+        return col;
+      });
+    });
+    setHeroMenuHasChanges(true);
+  };
+
+  const updateBlog = (columnIndex: number, headerIndex: number, blogIndex: number, field: "title" | "link", value: string) => {
+    setHeroMenuColumns((prev) => {
+      return prev.map((col, idx) => {
+        if (idx === columnIndex) {
+          return {
+            ...col,
+            headers: col.headers.map((header, hIdx) => {
+              if (hIdx === headerIndex) {
+                const newBlogs = [...(header.blogs || [])];
+                newBlogs[blogIndex] = { ...newBlogs[blogIndex], [field]: value };
+                return {
+                  ...header,
+                  blogs: newBlogs
+                };
+              }
+              return header;
+            })
+          };
+        }
+        return col;
+      });
+    });
+    setHeroMenuHasChanges(true);
+  };
+
   // Split filters into two columns
   const leftColumnFilters = localFilters.slice(0, Math.ceil(localFilters.length / 2));
   const rightColumnFilters = localFilters.slice(Math.ceil(localFilters.length / 2));
@@ -408,6 +755,8 @@ export function FilterManagement() {
               onClick={() => {
                 setActiveMenuTab("hero-menu");
                 setSelectedMenuItem(null);
+                setSelectedCategoryId("");
+                setActiveColumnTab(0);
                 setSelectedFilters({
                   settingConfigurations: new Set(),
                   shankConfigurations: new Set(),
@@ -422,6 +771,7 @@ export function FilterManagement() {
                   ornamentDetails: new Set(),
                 });
                 setHasChanges(false);
+                setHeroMenuHasChanges(false);
               }}
               className={`flex-1 ${
                 activeMenuTab === "hero-menu"
@@ -479,7 +829,297 @@ export function FilterManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {selectedMenuItem && (activeMenuTab === "main-menu" || activeMenuTab === "side-menu") ? (
+          {activeMenuTab === "hero-menu" ? (
+            // Hero Menu Management Interface
+            <div className="space-y-6">
+              {/* Category Selection */}
+              <div className="w-full max-w-md">
+                <Label htmlFor="hero-category" className="mb-2 block">Select Category</Label>
+                <Select value={selectedCategoryId} onValueChange={handleCategoryChange}>
+                  <SelectTrigger id="hero-category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories
+                      .filter((category) => {
+                        const categoryName = category.categoryName;
+                        return (
+                          categoryName === "Fine Jewelry Collection" ||
+                          categoryName === "Wedding Bands & Anniversary Bands" ||
+                          categoryName === "Engagement Rings"
+                        );
+                      })
+                      .map((category) => (
+                        <SelectItem key={category._id} value={category._id}>
+                          {category.categoryName}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedCategoryId && (
+                <>
+                  {/* Column Tabs */}
+                  <div className="flex gap-2">
+                    {[0, 1, 2, 3].map((index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        onClick={() => setActiveColumnTab(index)}
+                        className={`flex-1 ${
+                          activeColumnTab === index
+                            ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
+                            : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                        style={
+                          activeColumnTab === index
+                            ? { backgroundColor: "#dc2626", color: "#ffffff" }
+                            : {}
+                        }
+                      >
+                        Column {index + 1}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Column Content */}
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-semibold">Column {activeColumnTab + 1}</h3>
+                      <Button
+                        onClick={() => addHeroMenuHeader(activeColumnTab)}
+                        className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-shadow add-buttom-column"
+                        type="button"
+                        size="default"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Header
+                      </Button>
+                    </div>
+
+                    {heroMenuColumns[activeColumnTab]?.headers.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 border border-dashed border-gray-300 rounded-lg">
+                        No headers added yet. Click "Add Header" to create one.
+                      </div>
+                    ) : (
+                      heroMenuColumns[activeColumnTab]?.headers.map((header, headerIndex) => (
+                        <div key={headerIndex} className="border rounded-lg p-6 space-y-4 bg-gray-50">
+                          {/* Header Title Section */}
+                          <div className="bg-white p-4 rounded border mb-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <Label htmlFor={`header-title-${activeColumnTab}-${headerIndex}`} className="mb-2 block text-sm font-medium">
+                                  Header Title
+                                </Label>
+                                <Input
+                                  id={`header-title-${activeColumnTab}-${headerIndex}`}
+                                  value={header.title}
+                                  onChange={(e) => updateHeroMenuHeaderTitle(activeColumnTab, headerIndex, e.target.value)}
+                                  placeholder="Enter header title (e.g., Setting Types, Styles, etc.)"
+                                  className="w-full"
+                                />
+                              </div>
+                              <Button
+                                variant="outline"
+                                onClick={() => removeHeroMenuHeader(activeColumnTab, headerIndex)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 mt-8"
+                                type="button"
+                                size="icon"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Product Variables */}
+                          <div className="space-y-6">
+                            {filterTypes.map((filterType) => {
+                              const items = filterData[filterType.key as keyof typeof filterData];
+                              const { left, right } = splitIntoColumns(items);
+
+                              if (items.length === 0) return null;
+
+                              return (
+                                <div key={filterType.key} className="space-y-4">
+                                  <div className="mb-2">
+                                    <p className="text-sm text-gray-600 font-medium">{filterType.label}</p>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-6">
+                                    {/* Left Column */}
+                                    <div className="space-y-3">
+                                      {left.map((item) => (
+                                        <div key={item._id} className="flex items-center space-x-4">
+                                          <Checkbox
+                                            id={`${filterType.key}-${activeColumnTab}-${headerIndex}-${item._id}`}
+                                            checked={isHeroMenuVariableSelected(
+                                              activeColumnTab,
+                                              headerIndex,
+                                              filterType.key as keyof HeroMenuHeader['variables'],
+                                              item._id
+                                            )}
+                                            onCheckedChange={() =>
+                                              toggleHeroMenuVariable(
+                                                activeColumnTab,
+                                                headerIndex,
+                                                filterType.key as keyof HeroMenuHeader['variables'],
+                                                item._id
+                                              )
+                                            }
+                                            className="w-5 h-5 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white"
+                                          />
+                                          <Label
+                                            htmlFor={`${filterType.key}-${activeColumnTab}-${headerIndex}-${item._id}`}
+                                            className="text-base font-normal cursor-pointer flex-1"
+                                          >
+                                            {item.displayName || item.code}
+                                          </Label>
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {/* Right Column */}
+                                    <div className="space-y-3">
+                                      {right.map((item) => (
+                                        <div key={item._id} className="flex items-center space-x-4">
+                                          <Checkbox
+                                            id={`${filterType.key}-${activeColumnTab}-${headerIndex}-${item._id}-right`}
+                                            checked={isHeroMenuVariableSelected(
+                                              activeColumnTab,
+                                              headerIndex,
+                                              filterType.key as keyof HeroMenuHeader['variables'],
+                                              item._id
+                                            )}
+                                            onCheckedChange={() =>
+                                              toggleHeroMenuVariable(
+                                                activeColumnTab,
+                                                headerIndex,
+                                                filterType.key as keyof HeroMenuHeader['variables'],
+                                                item._id
+                                              )
+                                            }
+                                            className="w-5 h-5 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white"
+                                          />
+                                          <Label
+                                            htmlFor={`${filterType.key}-${activeColumnTab}-${headerIndex}-${item._id}-right`}
+                                            className="text-base font-normal cursor-pointer flex-1"
+                                          >
+                                            {item.displayName || item.code}
+                                          </Label>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {filterType.key !== filterTypes[filterTypes.length - 1].key && (
+                                    <Separator />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Blog Section inside Header - After variables */}
+                          <div className="mt-6 pt-6 border-t-2 border-gray-300">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-lg font-semibold">Add Blog</h3>
+                              <Button
+                                onClick={() => addBlog(activeColumnTab, headerIndex)}
+                                className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-shadow px-4 py-2 add-blog-buttom"
+                                type="button"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Blog
+                              </Button>
+                            </div>
+
+                            {(!header.blogs || header.blogs.length === 0) ? (
+                              <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg">
+                                No blogs added yet. Click "Add Blog" to create one.
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                {header.blogs.map((blog, blogIndex) => (
+                                  <div key={blogIndex} className="border rounded-lg p-4 bg-white">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex-1 space-y-4">
+                                        <div>
+                                          <Label htmlFor={`blog-title-${activeColumnTab}-${headerIndex}-${blogIndex}`} className="mb-2 block text-sm font-medium">
+                                            Title
+                                          </Label>
+                                          <Input
+                                            id={`blog-title-${activeColumnTab}-${headerIndex}-${blogIndex}`}
+                                            value={blog.title}
+                                            onChange={(e) => updateBlog(activeColumnTab, headerIndex, blogIndex, "title", e.target.value)}
+                                            placeholder="Enter blog title"
+                                            className="w-full"
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label htmlFor={`blog-link-${activeColumnTab}-${headerIndex}-${blogIndex}`} className="mb-2 block text-sm font-medium">
+                                            Link
+                                          </Label>
+                                          <Input
+                                            id={`blog-link-${activeColumnTab}-${headerIndex}-${blogIndex}`}
+                                            value={blog.link}
+                                            onChange={(e) => updateBlog(activeColumnTab, headerIndex, blogIndex, "link", e.target.value)}
+                                            placeholder="Enter blog link (e.g., https://example.com/blog)"
+                                            className="w-full"
+                                          />
+                                        </div>
+                                      </div>
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => removeBlog(activeColumnTab, headerIndex, blogIndex)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 mt-8"
+                                        type="button"
+                                        size="icon"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Hero Menu Footer Actions */}
+                  <Separator className="my-6" />
+                  <div className="flex items-center justify-end space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleCancelHeroMenu}
+                      disabled={isCreatingHeroMenu || isUpdatingHeroMenu || !heroMenuHasChanges}
+                      className="border-gray-300"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveHeroMenu}
+                      disabled={!heroMenuHasChanges || isCreatingHeroMenu || isUpdatingHeroMenu}
+                      className={`${
+                        heroMenuHasChanges
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      {isCreatingHeroMenu || isUpdatingHeroMenu ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {!selectedCategoryId && (
+                <div className="text-center py-8 text-gray-500">
+                  Please select a category to configure Hero Menu
+                </div>
+              )}
+            </div>
+          ) : selectedMenuItem && (activeMenuTab === "main-menu" || activeMenuTab === "side-menu") ? (
             // Show all filter types when Main Menu or Side Menu item is selected
             <div className="space-y-8">
               {filterTypes.map((filterType) => {
