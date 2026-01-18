@@ -24,6 +24,40 @@ export interface UpdateFilterVisibilityRequest {
   }>;
 }
 
+export interface MenuFilterSetting {
+  _id: string;
+  menuName: string;
+  menuItem: string;
+  item: string;
+  itemKey: string;
+  items: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MenuFilterSettingsResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: MenuFilterSetting[];
+  status: number;
+}
+
+export interface SaveMenuFilterSettingsRequest {
+  menuName: string;
+  menuItem: string;
+  filters: Array<{
+    item: string;
+    itemKey: string;
+    items: string[];
+  }>;
+}
+
+export interface GetMenuFilterSettingsParams {
+  menuName: string;
+  menuItem: string;
+}
+
 export const filterApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getFilterVisibility: builder.query<FilterVisibilityResponse, void>({
@@ -38,11 +72,31 @@ export const filterApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Filter'],
     }),
+    saveMenuFilterSettings: builder.mutation<MenuFilterSettingsResponse, SaveMenuFilterSettingsRequest>({
+      query: (body) => ({
+        url: '/Admin/saveMenuFilterSettings',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Filter'],
+    }),
+    getMenuFilterSettings: builder.query<MenuFilterSettingsResponse, GetMenuFilterSettingsParams>({
+      query: (params) => ({
+        url: '/Admin/getMenuFilterSettings',
+        params: {
+          menuName: params.menuName,
+          menuItem: params.menuItem,
+        },
+      }),
+      providesTags: ['Filter'],
+    }),
   }),
 });
 
 export const {
   useGetFilterVisibilityQuery,
   useUpdateFilterVisibilityMutation,
+  useSaveMenuFilterSettingsMutation,
+  useGetMenuFilterSettingsQuery,
 } = filterApi;
 
