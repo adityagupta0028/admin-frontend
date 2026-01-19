@@ -55,10 +55,10 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
   // Metal Type
   const [metalTypes, setMetalTypes] = useState<string[]>([]);
-  
+
   // Metal Images: { [metalType]: { [viewAngle]: File } } - single image per view angle
   const [metalImages, setMetalImages] = useState<Record<string, Record<string, File>>>({});
-  
+
   // Metal View Angles: { [metalType]: string[] } - all 3 view angles are required
   const [metalViewAngles, setMetalViewAngles] = useState<Record<string, string[]>>({});
 
@@ -112,8 +112,33 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [motifThemes, setMotifThemes] = useState<string[]>([]);
   const [ornamentDetails, setOrnamentDetails] = useState<string[]>([]);
 
+  // New Product Details Fields
+  const [averageWidth, setAverageWidth] = useState<string>("");
+  const [rhodiumPlate, setRhodiumPlate] = useState<string>("Yes");
+  const [isProductDetailsAccordionOpen, setIsProductDetailsAccordionOpen] = useState<boolean>(false);
+
+  // Center Stone Details Fields
+  const [isCenterStoneAccordionOpen, setIsCenterStoneAccordionOpen] = useState<boolean>(false);
+  const [centerStoneCertified, setCenterStoneCertified] = useState<string>("No");
+  const [centerStoneShape, setCenterStoneShape] = useState<string>("");
+  const [centerStoneMinWeight, setCenterStoneMinWeight] = useState<string>("");
+  const [centerStoneColor, setCenterStoneColor] = useState<string>("");
+  const [centerStoneColorQuality, setCenterStoneColorQuality] = useState<string>("");
+  const [centerStoneClarity, setCenterStoneClarity] = useState<string>("");
+  const [centerStoneDiamondQuality, setCenterStoneDiamondQuality] = useState<string>("");
+
   // Dropdown open states for multi-select
   const [shankTreatmentsDropdownOpen, setShankTreatmentsDropdownOpen] = useState(false);
+
+  // Side Stone Details Fields
+  const [hasSideStone, setHasSideStone] = useState<boolean>(false);
+  const [isSideStoneAccordionOpen, setIsSideStoneAccordionOpen] = useState<boolean>(false);
+  const [sideStoneMinWeight, setSideStoneMinWeight] = useState<string>("");
+  const [sideStoneQuantity, setSideStoneQuantity] = useState<string>("");
+  const [sideStoneAvgColor, setSideStoneAvgColor] = useState<string>("");
+  const [sideStoneAvgClarity, setSideStoneAvgClarity] = useState<string>("");
+
+  const [caratMinWeights, setCaratMinWeights] = useState<Record<string, string>>({});
   const [stylesDropdownOpen, setStylesDropdownOpen] = useState(false);
   const [settingFeaturesDropdownOpen, setSettingFeaturesDropdownOpen] = useState(false);
   const [motifThemesDropdownOpen, setMotifThemesDropdownOpen] = useState(false);
@@ -149,12 +174,12 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const diamondQualityDropdownRef = useRef<HTMLDivElement>(null);
   const ringSizeDropdownRef = useRef<HTMLDivElement>(null);
   const necklaceSizeDropdownRef = useRef<HTMLDivElement>(null);
-  
+
   // Fetch subSubCategories - we'll filter client-side based on selected subCategories
   // Note: The API might need to support multiple subCategoryIds, but for now we fetch all and filter
   const { data: subSubCategoriesResponse } = useGetSubSubCategoriesQuery();
   const allSubSubCategories = (subSubCategoriesResponse?.data as any[]) || [];
-  
+
   // Filter subcategories based on selected category
   const filteredSubCategories = useMemo(() => {
     if (!selectedCategory) {
@@ -167,7 +192,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       return categoryId === selectedCategory;
     });
   }, [subCategories, selectedCategory]);
-  
+
   // Filter subSubCategories based on selected subCategories
   const filteredSubSubCategories = useMemo(() => {
     if (selectedSubCategories.length === 0) {
@@ -234,9 +259,24 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const necklaceSizeStatic = ["16\"", "18\"", "20\"", "22\"", "24\""];
   //const caratWeightOptions = ["0.5", "1", "1.5", "2", "2.5", "3", "4", "5"];
   const caratWeightOptions = [
-    "0.25","0.5","0.75","1","1.25","1.5","1.75","2","2.25","2.5","2.75","3","3.25","3.5","3.75","4","4.25","4.5","4.75","5",
-    "5.5","6","6.5","7","7.5","8","8.5","9","9.5","10","10.5","11","11.5","12","12.5","13","13.5","14","14.5","15",
-    "16","17","18","19","20","21","22","23","24","25","26","27","28","29","30"
+    "0.25", "0.5", "0.75", "1", "1.25", "1.5", "1.75", "2", "2.25", "2.5", "2.75", "3", "3.25", "3.5", "3.75", "4", "4.25", "4.5", "4.75", "5",
+    "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15",
+    "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"
+  ];
+
+  const diamondShapeStatic = [
+    "Round", "Princess", "Cushion", "Oval", "Emerald", "Pear", "Radiant", "Asscher", "Marquise", "Heart"
+  ];
+
+  const diamondQualityOptions = [
+    { label: "Best", color: "D", clarity: "VVS", fullLabel: "Best - D, VVS" },
+    { label: "Better", color: "E", clarity: "VS1", fullLabel: "Better - E, VS1" },
+    { label: "Good", color: "F", clarity: "VS2", fullLabel: "Good - F, VS2" },
+    { label: "Fair", color: "G", clarity: "SI1", fullLabel: "Fair - G, SI1" },
+    { label: "DQ1", color: "DE", clarity: "CL1", fullLabel: "DQ1 - DE, CL1" },
+    { label: "DQ2", color: "EF", clarity: "CL2", fullLabel: "DQ2 - EF, CL2" },
+    { label: "DQ3", color: "FG", clarity: "CL3", fullLabel: "DQ3 - FG, CL3" },
+    { label: "DQ4", color: "GH", clarity: "CL4", fullLabel: "DQ4 - GH, CL4" },
   ];
 
   const viewAngleOptions = [
@@ -374,7 +414,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       }
     });
   };
-  
+
   // Handle image upload for specific metal type and view angle (single file)
   const handleMetalImageUpload = (metalType: string, viewAngle: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -388,7 +428,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       }));
     }
   };
-  
+
   // Remove image for specific metal type and view angle
   const removeMetalImage = (metalType: string, viewAngle: string) => {
     setMetalImages((prev) => {
@@ -553,6 +593,21 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setSettingFeatures([]);
     setMotifThemes([]);
     setOrnamentDetails([]);
+    setAverageWidth("");
+    setRhodiumPlate("Yes");
+    setCenterStoneCertified("No");
+    setCenterStoneShape("");
+    setCenterStoneMinWeight("");
+    setCenterStoneColor("");
+    setCenterStoneColorQuality("");
+    setCenterStoneClarity("");
+    setCenterStoneDiamondQuality("");
+    setHasSideStone(false);
+    setSideStoneMinWeight("");
+    setSideStoneQuantity("");
+    setSideStoneAvgColor("");
+    setSideStoneAvgClarity("");
+    setCaratMinWeights({});
   };
 
   // Handle form submission
@@ -627,7 +682,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       toast.error("Please select at least one Ornament Detail");
       return;
     }
-    
+
     // Validate metal images - all 3 view angles must have images for each metal type
     if (metalTypes.length > 0) {
       const allViewAngles = viewAngleOptions.map(a => a.value);
@@ -666,7 +721,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
       // Metal types
       metalTypes.forEach((type) => formData.append("metal_type", type));
-      
+
       // Metal Images - send single file per view angle
       // Format: metal_images_${metalType}_${viewAngle}
       metalTypes.forEach((metalType) => {
@@ -685,6 +740,17 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       diamondQualities.forEach((quality) => formData.append("diamond_quality", quality));
       caratWeights.forEach((weight) => formData.append("carat_weight", weight));
 
+      // Filter min weights to only include those in selected caratWeights
+      const filteredMinWeights: Record<string, string> = {};
+      caratWeights.forEach(weight => {
+        if (caratMinWeights[weight]) {
+          filteredMinWeights[weight] = caratMinWeights[weight];
+        }
+      });
+      if (Object.keys(filteredMinWeights).length > 0) {
+        formData.append("carat_min_weights", JSON.stringify(filteredMinWeights));
+      }
+
       // Stone
       stones.forEach((stone) => formData.append("stone", stone));
 
@@ -696,8 +762,28 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       formData.append("engraving_allowed", engraving.toString());
       formData.append("gift", gift.toString());
       if (productDetails.trim()) formData.append("product_details", productDetails.trim());
+      if (averageWidth.trim()) formData.append("average_width", averageWidth.trim());
+      formData.append("rhodium_plate", rhodiumPlate);
+
+      // Center Stone Details
+      formData.append("center_stone_certified", centerStoneCertified);
+      if (centerStoneShape) formData.append("center_stone_shape", centerStoneShape);
+      if (centerStoneMinWeight) formData.append("center_stone_min_weight", centerStoneMinWeight);
+      if (centerStoneColor) formData.append("center_stone_color", centerStoneColor);
+      if (centerStoneColorQuality) formData.append("center_stone_color_quality", centerStoneColorQuality);
+      if (centerStoneClarity) formData.append("center_stone_clarity", centerStoneClarity);
+      if (centerStoneDiamondQuality) formData.append("center_stone_diamond_quality", centerStoneDiamondQuality);
+
       if (centerStoneDetails.trim()) formData.append("center_stone_details", centerStoneDetails.trim());
-      if (sideStoneDetails.trim()) formData.append("side_stone_details", sideStoneDetails.trim());
+
+      // Side Stone Details
+      if (hasSideStone) {
+        if (sideStoneMinWeight) formData.append("side_stone_min_weight", sideStoneMinWeight);
+        if (sideStoneQuantity) formData.append("side_stone_quantity", sideStoneQuantity);
+        if (sideStoneAvgColor) formData.append("side_stone_avg_color", sideStoneAvgColor);
+        if (sideStoneAvgClarity) formData.append("side_stone_avg_clarity", sideStoneAvgClarity);
+        if (sideStoneDetails.trim()) formData.append("side_stone_details", sideStoneDetails.trim());
+      }
       if (stoneDetails.trim()) formData.append("stone_details", stoneDetails.trim());
 
       // Gender
@@ -710,7 +796,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
       // Status
       formData.append("status", status);
-      
+
       // Collections
       if (collections) {
         formData.append("collections", collections);
@@ -920,9 +1006,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     <span>
                       {selectedCategory
                         ? (() => {
-                            const selectedCat = categories.find((cat) => getCategoryId(cat) === selectedCategory);
-                            return selectedCat ? getCategoryName(selectedCat) : "Select...";
-                          })()
+                          const selectedCat = categories.find((cat) => getCategoryId(cat) === selectedCategory);
+                          return selectedCat ? getCategoryName(selectedCat) : "Select...";
+                        })()
                         : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
@@ -966,18 +1052,18 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                       }
                       setSubCategoryDropdownOpen(!subCategoryDropdownOpen);
                     }}
-                    style={{ 
+                    style={{
                       cursor: shouldDisableSubCategories ? 'not-allowed' : 'pointer',
                       opacity: shouldDisableSubCategories ? 0.6 : 1,
                       pointerEvents: shouldDisableSubCategories ? 'none' : 'auto'
                     }}
                   >
                     <span>
-                      {shouldDisableSubCategories 
+                      {shouldDisableSubCategories
                         ? "Not required for this category"
                         : selectedSubCategories.length
-                        ? `${selectedSubCategories.length} subcategor${selectedSubCategories.length > 1 ? 'ies' : ''} selected`
-                        : "Select..."}
+                          ? `${selectedSubCategories.length} subcategor${selectedSubCategories.length > 1 ? 'ies' : ''} selected`
+                          : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
                   </div>
@@ -1028,18 +1114,18 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                       }
                       setSubSubCategoryDropdownOpen(!subSubCategoryDropdownOpen);
                     }}
-                    style={{ 
+                    style={{
                       cursor: shouldDisableSubCategories ? 'not-allowed' : 'pointer',
                       opacity: shouldDisableSubCategories ? 0.6 : 1,
                       pointerEvents: shouldDisableSubCategories ? 'none' : 'auto'
                     }}
                   >
                     <span>
-                      {shouldDisableSubCategories 
+                      {shouldDisableSubCategories
                         ? "Not required for this category"
                         : selectedSubSubCategories.length
-                        ? `${selectedSubSubCategories.length} sub-subcategory${selectedSubSubCategories.length > 1 ? 'ies' : ''} selected`
-                        : "Select..."}
+                          ? `${selectedSubSubCategories.length} sub-subcategory${selectedSubSubCategories.length > 1 ? 'ies' : ''} selected`
+                          : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
                   </div>
@@ -1077,8 +1163,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
               </div>
             </div>
 
-             {/* Video Upload */}
-             <div className="mb-3">
+            {/* Video Upload */}
+            <div className="mb-3">
               <label className="form-label text-black">Upload Videos</label>
               <input
                 type="file"
@@ -1109,13 +1195,13 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             </div>
 
 
-           
+
 
             {/* Checkboxes */}
             <div className="mb-3">
               <label className="form-label text-black">Metal Type</label>
               <div className="w-100 half-divide">
-             
+
                 <div className="form-check w-50">
                   <input
                     className="form-check-input"
@@ -1200,7 +1286,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 {metalTypes.map((metalType) => (
                   <div key={metalType} className="mb-4 p-3 border rounded">
                     <h6 className="text-black mb-3">{metalType}</h6>
-                    
+
                     {/* View Angle Selection - All 3 Required */}
                     <div className="mb-3">
                       <label className="form-label text-black">View Angles <span className="text-danger">*</span></label>
@@ -1223,7 +1309,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                       </div>
                       <small className="text-muted">All view angles are required</small>
                     </div>
-                    
+
                     {/* Image Upload for each View Angle - Single Image Required */}
                     <div className="mb-3">
                       <label className="form-label text-black">Upload Images <span className="text-danger">*</span></label>
@@ -1330,23 +1416,66 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 </div>
               </div>
             </div>
+            {/* Radio Button Fields - Single Select */}
             <div className="mb-3">
-              <label className="form-label text-black">Carat Weight</label>
-              <div className="w-100" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {caratWeightOptions.map((weight, index) => (
-                  <div className="form-check" key={index} style={{ width: 'calc(12.5% - 8px)', minWidth: '100px' }}>
+              <label className="form-label text-black">Setting Configurations *</label>
+              <div>
+                {settingConfigurationsData?.data?.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
                     <input
                       className="form-check-input"
-                      type="checkbox"
-                      id={`carat-${weight}`}
-                      checked={caratWeights.includes(weight)}
-                      onChange={() => toggleCaratWeight(weight)}
+                      type="radio"
+                      name="settingConfigurations"
+                      id={`settingConfig-${item._id}`}
+                      value={item._id}
+                      checked={settingConfigurations === item._id}
+                      onChange={(e) => setSettingConfigurations(e.target.value)}
                     />
-                    <label className="form-check-label text-black" htmlFor={`carat-${weight}`}>
-                      {weight} ct
+                    <label className="form-check-label text-black" htmlFor={`settingConfig-${item._id}`}>
+                      {item.displayName}
                     </label>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-black">Carat Weight</label>
+              <div className="w-100" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {caratWeightOptions.map((weight, index) => {
+                  const isSelected = caratWeights.includes(weight);
+                  const selectedSetting = settingConfigurationsData?.data?.find(item => item._id === settingConfigurations);
+                  const isTrilogyOrToiEtMoi = selectedSetting?.displayName === "Trilogy Setting" || selectedSetting?.displayName === "Toi Et Moi Setting";
+
+                  return (
+                    <div className="d-flex flex-column gap-1" key={index} style={{ width: 'calc(25% - 8px)', minWidth: '150px', marginBottom: '10px' }}>
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id={`carat-${weight}`}
+                          checked={isSelected}
+                          onChange={() => toggleCaratWeight(weight)}
+                        />
+                        <label className="form-check-label text-black" htmlFor={`carat-${weight}`}>
+                          {weight} ct
+                        </label>
+                      </div>
+                      {isTrilogyOrToiEtMoi && isSelected && (
+                        <div className="ms-4">
+                          <label className="form-label text-black small mb-0">Minimum Stone Weight</label>
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            placeholder="Min Weight"
+                            value={caratMinWeights[weight] || ""}
+                            onChange={(e) => setCaratMinWeights(prev => ({ ...prev, [weight]: e.target.value }))}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1646,109 +1775,88 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
               </div>
             </div>
 
-{/* Size dropdowns */}
-<div className="dropdown-multi">
-  {/* Ring Size dropdown - only when Ring is selected */}
-  {sizeType === "ring" && (
-    <div className="mb-3 ddr-width" ref={ringSizeDropdownRef}>
-      <label className="dropdown-label text-black">Ring Size</label>
-      <div className={`dropdown ${ringSizeDropdownOpen ? "active" : ""}`}>
-        <div
-          className="dropdown-select"
-          onClick={() => setRingSizeDropdownOpen(!ringSizeDropdownOpen)}
-        >
-          <span>
-            {ringSizes.length
-              ? `Selected: ${ringSizes.join(", ")}`
-              : "Select..."}
-          </span>
-          <i className="dropdown-arrow"></i>
-        </div>
-        {ringSizeDropdownOpen && (
-          <div className="dropdown-list">
-            {ringSizeStatic.map((size) => (
-              <label className="dropdown-item" key={size}>
-                <input
-                  type="checkbox"
-                  value={size}
-                  checked={ringSizes.includes(size)}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    toggleRingSize(size);
-                  }}
-                />
-                {size}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )}
-
-  {/* Necklace Size dropdown - only when Necklace is selected */}
-  {sizeType === "necklace" && (
-    <div className="mb-3 ddr-width" ref={necklaceSizeDropdownRef}>
-      <label className="dropdown-label text-black">Necklace Size</label>
-      <div className={`dropdown ${necklaceSizeDropdownOpen ? "active" : ""}`}>
-        <div
-          className="dropdown-select"
-          onClick={() =>
-            setNecklaceSizeDropdownOpen(!necklaceSizeDropdownOpen)
-          }
-        >
-          <span>
-            {necklaceSizes.length
-              ? `Selected: ${necklaceSizes.join(", ")}`
-              : "Select..."}
-          </span>
-          <i className="dropdown-arrow"></i>
-        </div>
-        {necklaceSizeDropdownOpen && (
-          <div className="dropdown-list">
-            {necklaceSizeStatic.map((size) => (
-              <label className="dropdown-item" key={size}>
-                <input
-                  type="checkbox"
-                  value={size}
-                  checked={necklaceSizes.includes(size)}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    toggleNecklaceSize(size);
-                  }}
-                />
-                {size}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )}
-</div>
-
-            {/* Radio Button Fields - Single Select */}
-            <div className="mb-3">
-              <label className="form-label text-black">Setting Configurations *</label>
-              <div>
-                {settingConfigurationsData?.data?.map((item) => (
-                  <div className="form-check form-check-inline" key={item._id}>
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="settingConfigurations"
-                      id={`settingConfig-${item._id}`}
-                      value={item._id}
-                      checked={settingConfigurations === item._id}
-                      onChange={(e) => setSettingConfigurations(e.target.value)}
-                    />
-                    <label className="form-check-label text-black" htmlFor={`settingConfig-${item._id}`}>
-                      {item.displayName}
-                    </label>
+            {/* Size dropdowns */}
+            <div className="dropdown-multi">
+              {/* Ring Size dropdown - only when Ring is selected */}
+              {sizeType === "ring" && (
+                <div className="mb-3 ddr-width" ref={ringSizeDropdownRef}>
+                  <label className="dropdown-label text-black">Ring Size</label>
+                  <div className={`dropdown ${ringSizeDropdownOpen ? "active" : ""}`}>
+                    <div
+                      className="dropdown-select"
+                      onClick={() => setRingSizeDropdownOpen(!ringSizeDropdownOpen)}
+                    >
+                      <span>
+                        {ringSizes.length
+                          ? `Selected: ${ringSizes.join(", ")}`
+                          : "Select..."}
+                      </span>
+                      <i className="dropdown-arrow"></i>
+                    </div>
+                    {ringSizeDropdownOpen && (
+                      <div className="dropdown-list">
+                        {ringSizeStatic.map((size) => (
+                          <label className="dropdown-item" key={size}>
+                            <input
+                              type="checkbox"
+                              value={size}
+                              checked={ringSizes.includes(size)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleRingSize(size);
+                              }}
+                            />
+                            {size}
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {/* Necklace Size dropdown - only when Necklace is selected */}
+              {sizeType === "necklace" && (
+                <div className="mb-3 ddr-width" ref={necklaceSizeDropdownRef}>
+                  <label className="dropdown-label text-black">Necklace Size</label>
+                  <div className={`dropdown ${necklaceSizeDropdownOpen ? "active" : ""}`}>
+                    <div
+                      className="dropdown-select"
+                      onClick={() =>
+                        setNecklaceSizeDropdownOpen(!necklaceSizeDropdownOpen)
+                      }
+                    >
+                      <span>
+                        {necklaceSizes.length
+                          ? `Selected: ${necklaceSizes.join(", ")}`
+                          : "Select..."}
+                      </span>
+                      <i className="dropdown-arrow"></i>
+                    </div>
+                    {necklaceSizeDropdownOpen && (
+                      <div className="dropdown-list">
+                        {necklaceSizeStatic.map((size) => (
+                          <label className="dropdown-item" key={size}>
+                            <input
+                              type="checkbox"
+                              value={size}
+                              checked={necklaceSizes.includes(size)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleNecklaceSize(size);
+                              }}
+                            />
+                            {size}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
+
+
 
             <div className="mb-3">
               <label className="form-label text-black">Shank Configurations *</label>
@@ -2072,37 +2180,488 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 </label>
               </div>
             </div>
-            <div className="mb-3">
-              <label className="form-label text-black">Product Details</label>
-              <textarea
-                className="form-control"
-                rows={4}
-                placeholder="Enter Product Details..."
-                value={productDetails}
-                onChange={(e) => setProductDetails(e.target.value)}
-              ></textarea>
+            <div className="mb-3 border rounded p-3">
+              <div
+                className="d-flex justify-content-between align-items-center cursor-pointer"
+                onClick={() => setIsProductDetailsAccordionOpen(!isProductDetailsAccordionOpen)}
+                style={{ cursor: 'pointer' }}
+              >
+                <h5 className="text-black mb-0">Product Details Configuration</h5>
+                <i className={`fas fa-chevron-${isProductDetailsAccordionOpen ? 'up' : 'down'}`}></i>
+              </div>
+
+              {isProductDetailsAccordionOpen && (
+                <div className="mt-3">
+                  {/* 1. Product Details - Text input field */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Product Details</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter Product Details..."
+                      value={productDetails}
+                      onChange={(e) => setProductDetails(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 2. Average Width - Integer input with 'mm' as default text */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Average Width (mm)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="mm"
+                      value={averageWidth}
+                      onChange={(e) => setAverageWidth(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 3. Rhodium Plate: Yes / No Radio button with yes defaulted */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Rhodium Plate</label>
+                    <div>
+                      <div className="form-check form-check-inline">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="rhodiumPlate"
+                          id="rhodiumPlateYes"
+                          value="Yes"
+                          checked={rhodiumPlate === "Yes"}
+                          onChange={(e) => setRhodiumPlate(e.target.value)}
+                        />
+                        <label className="form-check-label text-black" htmlFor="rhodiumPlateYes">
+                          Yes
+                        </label>
+                      </div>
+                      <div className="form-check form-check-inline">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="rhodiumPlate"
+                          id="rhodiumPlateNo"
+                          value="No"
+                          checked={rhodiumPlate === "No"}
+                          onChange={(e) => setRhodiumPlate(e.target.value)}
+                        />
+                        <label className="form-check-label text-black" htmlFor="rhodiumPlateNo">
+                          No
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Setting Configurations: Copy from above */}
+                  {/* <div className="mb-3">
+                    <label className="form-label text-black">Setting Configurations *</label>
+                    <div>
+                      {settingConfigurationsData?.data?.map((item) => (
+                        <div className="form-check form-check-inline" key={`pd-config-${item._id}`}>
+                          <input
+                            className="form-check-input"
+                            type="radio"
+                            name="productDetailsSettingConfigurations"
+                            id={`pd-settingConfig-${item._id}`}
+                            value={item._id}
+                            checked={settingConfigurations === item._id}
+                            onChange={(e) => setSettingConfigurations(e.target.value)}
+                          />
+                          <label className="form-check-label text-black" htmlFor={`pd-settingConfig-${item._id}`}>
+                            {item.displayName}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div> */}
+                </div>
+              )}
             </div>
-            <div className="mb-3">
-              <label className="form-label text-black">Center Stone Details</label>
-              <textarea
-                className="form-control"
-                rows={4}
-                placeholder="Enter Center Stone Details..."
-                value={centerStoneDetails}
-                onChange={(e) => setCenterStoneDetails(e.target.value)}
-              ></textarea>
+            <div className="mb-3 border rounded p-3">
+              <div
+                className="d-flex justify-content-between align-items-center cursor-pointer"
+                onClick={() => setIsCenterStoneAccordionOpen(!isCenterStoneAccordionOpen)}
+                style={{ cursor: 'pointer' }}
+              >
+                <h5 className="text-black mb-0">Center Stone Details Configuration</h5>
+                <i className={`fas fa-chevron-${isCenterStoneAccordionOpen ? 'up' : 'down'}`}></i>
+              </div>
+
+              {isCenterStoneAccordionOpen && (
+                <div className="mt-3">
+                  {/* 1. Add Stone - Reusing existing stone fields */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Stone</label>
+                    <div className="w-100 half-divide">
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="cs-stone-diamond"
+                          checked={stones.includes("Diamond")}
+                          onChange={() => toggleStone("Diamond")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="cs-stone-diamond">
+                          Diamond
+                        </label>
+                      </div>
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="cs-stone-color-diamond"
+                          checked={stones.includes("Color Diamond")}
+                          onChange={() => toggleStone("Color Diamond")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="cs-stone-color-diamond">
+                          Color Diamond
+                        </label>
+                      </div>
+                    </div>
+                    <div className="w-100 half-divide">
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="cs-stone-gemstone"
+                          checked={stones.includes("Gemstone")}
+                          onChange={() => toggleStone("Gemstone")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="cs-stone-gemstone">
+                          Gemstone
+                        </label>
+                      </div>
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="cs-stone-none"
+                          checked={stones.includes("None")}
+                          onChange={() => toggleStone("None")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="cs-stone-none">
+                          None
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Diamond Origin - Reusing existing fields */}
+                  {/* <div className="mb-3">
+                    <label className="form-label text-black">Diamond Origin</label>
+                    <div className="w-100">
+                      {diamondOriginStatic.map((origin) => (
+                        <div className="form-check form-check-inline" key={`cs-origin-${origin.id}`}>
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id={`cs-origin-${origin.value}`}
+                            value={origin.value}
+                            checked={diamondOrigins.includes(origin.value)}
+                            onChange={() => toggleDiamondOrigin(origin)}
+                          />
+                          <label className="form-check-label text-black" htmlFor={`cs-origin-${origin.value}`}>
+                            {origin.label}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div> */}
+
+                  {/* 3. IGI / GIA Certified: Yes / No Radio button */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">IGI / GIA Certified</label>
+                    <div>
+                      <div className="form-check form-check-inline">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="centerStoneCertified"
+                          id="centerStoneCertifiedYes"
+                          value="Yes"
+                          checked={centerStoneCertified === "Yes"}
+                          onChange={(e) => setCenterStoneCertified(e.target.value)}
+                        />
+                        <label className="form-check-label text-black" htmlFor="centerStoneCertifiedYes">
+                          Yes
+                        </label>
+                      </div>
+                      <div className="form-check form-check-inline">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="centerStoneCertified"
+                          id="centerStoneCertifiedNo"
+                          value="No"
+                          checked={centerStoneCertified === "No"}
+                          onChange={(e) => setCenterStoneCertified(e.target.value)}
+                        />
+                        <label className="form-check-label text-black" htmlFor="centerStoneCertifiedNo">
+                          No
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Diamond Shape - Radio button options (checkbox style per request description "Radio button options (checkbox)") */}
+                  {/* Using Radio buttons as selecting a shape is typically single choice, but description had (checkbox) */}
+                  {/* Assuming single selection for shape is best, but using radio input type */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Diamond Shape</label>
+                    <div className="d-flex flex-wrap gap-2">
+                      {diamondShapeStatic.map((shape) => (
+                        <div className="form-check form-check-inline" key={shape}>
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            name="centerStoneShape"
+                            id={`cs-shape-${shape}`}
+                            value={shape}
+                            checked={centerStoneShape === shape}
+                            onChange={(e) => setCenterStoneShape(e.target.value)}
+                          />
+                          <label className="form-check-label text-black" htmlFor={`cs-shape-${shape}`}>
+                            {shape}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 5. Minimum Stone Weight - Text Input */}
+                  {/* <div className="mb-3">
+                    <label className="form-label text-black">Minimum Stone Weight</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter Minimum Weight"
+                      value={centerStoneMinWeight}
+                      onChange={(e) => setCenterStoneMinWeight(e.target.value)}
+                    />
+                  </div> */}
+
+                  {/* 6. Color - Text Input */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Color</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter Color"
+                      value={centerStoneColor}
+                      onChange={(e) => setCenterStoneColor(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Diamond Quality Selector */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Diamond Quality</label>
+                    <div className="d-flex flex-wrap gap-2">
+                      {diamondQualityOptions.map((option) => (
+                        <div
+                          className={`border rounded p-2 cursor-pointer ${centerStoneDiamondQuality === option.label ? 'bg-secondary text-white' : 'bg-light text-black'}`}
+                          key={option.label}
+                          onClick={() => {
+                            setCenterStoneDiamondQuality(option.label);
+                            setCenterStoneColorQuality(option.color);
+                            setCenterStoneClarity(option.clarity);
+                          }}
+                          style={{ cursor: 'pointer', minWidth: '120px', textAlign: 'center' }}
+                        >
+                          {option.fullLabel}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 7. Color Quality - Read Only */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Color Quality (Derived)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Select Diamond Quality"
+                      value={centerStoneColorQuality}
+                      readOnly
+                    />
+                  </div>
+
+                  {/* 8. Clarity - Read Only */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Clarity (Derived)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Select Diamond Quality"
+                      value={centerStoneClarity}
+                      readOnly
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="mb-3">
-              <label className="form-label text-black">Side Stone Details</label>
-              <textarea
-                className="form-control"
-                rows={4}
-                placeholder="Enter Side Stone Details..."
-                value={sideStoneDetails}
-                onChange={(e) => setSideStoneDetails(e.target.value)}
-              ></textarea>
+
+            <div className={`mb-3 border rounded p-3 ${!hasSideStone ? 'bg-light' : ''}`}>
+              <div
+                className="d-flex justify-content-between align-items-center"
+              >
+                <div className="d-flex align-items-center gap-3">
+                  <h5 className="text-black mb-0">Side Stone Details Configuration</h5>
+                  <div className="form-check form-switch m-0">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      id="sideStoneToggle"
+                      checked={hasSideStone}
+                      onChange={(e) => {
+                        setHasSideStone(e.target.checked);
+                        if (!e.target.checked) setIsSideStoneAccordionOpen(false);
+                        else setIsSideStoneAccordionOpen(true);
+                      }}
+                    />
+                  </div>
+                </div>
+                {hasSideStone && (
+                  <div
+                    onClick={() => setIsSideStoneAccordionOpen(!isSideStoneAccordionOpen)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className={`fas fa-chevron-${isSideStoneAccordionOpen ? 'up' : 'down'}`}></i>
+                  </div>
+                )}
+              </div>
+
+              {hasSideStone && isSideStoneAccordionOpen && (
+                <div className="mt-3">
+                  {/* 1. Stone - Reusing existing stone fields */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Stone</label>
+                    <div className="w-100 half-divide">
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="ss-stone-diamond"
+                          checked={stones.includes("Diamond")}
+                          onChange={() => toggleStone("Diamond")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="ss-stone-diamond">
+                          Diamond
+                        </label>
+                      </div>
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="ss-stone-color-diamond"
+                          checked={stones.includes("Color Diamond")}
+                          onChange={() => toggleStone("Color Diamond")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="ss-stone-color-diamond">
+                          Color Diamond
+                        </label>
+                      </div>
+                    </div>
+                    <div className="w-100 half-divide">
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="ss-stone-gemstone"
+                          checked={stones.includes("Gemstone")}
+                          onChange={() => toggleStone("Gemstone")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="ss-stone-gemstone">
+                          Gemstone
+                        </label>
+                      </div>
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="ss-stone-none"
+                          checked={stones.includes("None")}
+                          onChange={() => toggleStone("None")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="ss-stone-none">
+                          None
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Diamond Origin - Reusing existing fields */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Diamond Origin</label>
+                    <div className="w-100">
+                      {diamondOriginStatic.map((origin) => (
+                        <div className="form-check form-check-inline" key={`ss-origin-${origin.id}`}>
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id={`ss-origin-${origin.value}`}
+                            value={origin.value}
+                            checked={diamondOrigins.includes(origin.value)}
+                            onChange={() => toggleDiamondOrigin(origin)}
+                          />
+                          <label className="form-check-label text-black" htmlFor={`ss-origin-${origin.value}`}>
+                            {origin.label}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3. Minimum Stone Weight: Integer with CT as suffix
+                  // <div className="mb-3">
+                  //   <label className="form-label text-black">Minimum Stone Weight (CT)</label>
+                  //   <input
+                  //     type="number"
+                  //     className="form-control"
+                  //     placeholder="Enter Weight in CT"
+                  //     value={sideStoneMinWeight}
+                  //     onChange={(e) => setSideStoneMinWeight(e.target.value)}
+                  //   />
+                  // </div> */}
+
+                  {/* 4. Quantity: Integer value */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Quantity</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter Quantity"
+                      value={sideStoneQuantity}
+                      onChange={(e) => setSideStoneQuantity(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 5. Average Color : Text Input */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Average Color</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter Average Color"
+                      value={sideStoneAvgColor}
+                      onChange={(e) => setSideStoneAvgColor(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 6. Average Clarity : Text Input */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Average Clarity</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter Average Clarity"
+                      value={sideStoneAvgClarity}
+                      onChange={(e) => setSideStoneAvgClarity(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="mb-3">
+            {/* <div className="mb-3">
               <label className="form-label text-black">Stone Details</label>
               <textarea
                 className="form-control"
@@ -2111,7 +2670,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 value={stoneDetails}
                 onChange={(e) => setStoneDetails(e.target.value)}
               ></textarea>
-            </div>
+            </div> */}
             <div className="mb-3">
               <label className="form-label text-black">Status</label>
               <select
