@@ -64,6 +64,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
   // Diamond fields
   const [diamondOrigins, setDiamondOrigins] = useState<string[]>([]);
+  const [diamondGrading, setDiamondGrading] = useState<"single" | "double">("single");
   const [diamondQualities, setDiamondQualities] = useState<string[]>([]);
   const [diamondDropdownOpen, setDiamondDropdownOpen] = useState(false);
   const [diamondQualityDropdownOpen, setDiamondQualityDropdownOpen] = useState(false);
@@ -126,6 +127,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [centerStoneColorQuality, setCenterStoneColorQuality] = useState<string>("");
   const [centerStoneClarity, setCenterStoneClarity] = useState<string>("");
   const [centerStoneDiamondQuality, setCenterStoneDiamondQuality] = useState<string>("");
+  const [centerStoneQualityType, setCenterStoneQualityType] = useState<string>("");
 
   // Dropdown open states for multi-select
   const [shankTreatmentsDropdownOpen, setShankTreatmentsDropdownOpen] = useState(false);
@@ -269,20 +271,23 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   ];
 
   const diamondQualityOptions = [
-    { label: "Best", color: "D", clarity: "VVS", fullLabel: "Best - D, VVS" },
-    { label: "Better", color: "E", clarity: "VS1", fullLabel: "Better - E, VS1" },
-    { label: "Good", color: "F", clarity: "VS2", fullLabel: "Good - F, VS2" },
-    { label: "Fair", color: "G", clarity: "SI1", fullLabel: "Fair - G, SI1" },
-    { label: "DQ1", color: "DE", clarity: "CL1", fullLabel: "DQ1 - DE, CL1" },
-    { label: "DQ2", color: "EF", clarity: "CL2", fullLabel: "DQ2 - EF, CL2" },
-    { label: "DQ3", color: "FG", clarity: "CL3", fullLabel: "DQ3 - FG, CL3" },
-    { label: "DQ4", color: "GH", clarity: "CL4", fullLabel: "DQ4 - GH, CL4" },
+    { label: "Best", color: "D", clarity: "VVS", fullLabel: "Best - D, VVS", type: "single" },
+    { label: "Better", color: "E", clarity: "VS1", fullLabel: "Better - E, VS1", type: "single" },
+    { label: "Good", color: "F", clarity: "VS2", fullLabel: "Good - F, VS2", type: "single" },
+    { label: "Fair", color: "G", clarity: "SI1", fullLabel: "Fair - G, SI1", type: "single" },
+    { label: "DQ1", color: "DE", clarity: "CL1", fullLabel: "DQ1 - DE, CL1", type: "double" },
+    { label: "DQ2", color: "EF", clarity: "CL2", fullLabel: "DQ2 - EF, CL2", type: "double" },
+    { label: "DQ3", color: "FG", clarity: "CL3", fullLabel: "DQ3 - FG, CL3", type: "double" },
+    { label: "DQ4", color: "GH", clarity: "CL4", fullLabel: "DQ4 - GH, CL4", type: "double" },
   ];
 
   const viewAngleOptions = [
     { id: 1, label: "Angled view", value: "Angled view" },
     { id: 2, label: "Top view", value: "Top view" },
     { id: 3, label: "Side view", value: "Side view" },
+    { id: 4, label: "Images 1", value: "Image 1" },
+    { id: 5, label: "Images 2", value: "Image 2" },
+    { id: 6, label: "Images 3", value: "Image 3" },
   ];
 
   // Handle video file selection
@@ -602,6 +607,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setCenterStoneColorQuality("");
     setCenterStoneClarity("");
     setCenterStoneDiamondQuality("");
+    setCenterStoneQualityType("");
     setHasSideStone(false);
     setSideStoneMinWeight("");
     setSideStoneQuantity("");
@@ -683,16 +689,11 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       return;
     }
 
-    // Validate metal images - all 3 view angles must have images for each metal type
+    // Validate metal images - mandatory view angles must have images for each metal type
     if (metalTypes.length > 0) {
-      const allViewAngles = viewAngleOptions.map(a => a.value);
+      const mandatoryAngles = ["Angled view", "Top view", "Side view"];
       for (const metalType of metalTypes) {
-        const selectedAngles = metalViewAngles[metalType] || [];
-        if (selectedAngles.length !== allViewAngles.length) {
-          toast.error(`Please ensure all 3 view angles are selected for ${metalType}`);
-          return;
-        }
-        for (const viewAngle of allViewAngles) {
+        for (const viewAngle of mandatoryAngles) {
           if (!metalImages[metalType]?.[viewAngle]) {
             toast.error(`Please upload an image for ${viewAngle} of ${metalType}`);
             return;
@@ -773,6 +774,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       if (centerStoneColorQuality) formData.append("center_stone_color_quality", centerStoneColorQuality);
       if (centerStoneClarity) formData.append("center_stone_clarity", centerStoneClarity);
       if (centerStoneDiamondQuality) formData.append("center_stone_diamond_quality", centerStoneDiamondQuality);
+      if (centerStoneQualityType) formData.append("center_stone_quality_type", centerStoneQualityType);
 
       if (centerStoneDetails.trim()) formData.append("center_stone_details", centerStoneDetails.trim());
 
@@ -1381,6 +1383,46 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 </div>
               </div>
 
+              <div className="mb-3 ddr-width">
+                <label className="dropdown-label text-black">Diamond Grading</label>
+                <div className="d-flex gap-3 mt-1">
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="diamondGrading"
+                      id="gradingSingle"
+                      value="single"
+                      checked={diamondGrading === "single"}
+                      onChange={() => {
+                        setDiamondGrading("single");
+                        setDiamondQualities([]);
+                      }}
+                    />
+                    <label className="form-check-label text-black" htmlFor="gradingSingle">
+                      Single Letter
+                    </label>
+                  </div>
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="diamondGrading"
+                      id="gradingDouble"
+                      value="double"
+                      checked={diamondGrading === "double"}
+                      onChange={() => {
+                        setDiamondGrading("double");
+                        setDiamondQualities([]);
+                      }}
+                    />
+                    <label className="form-check-label text-black" htmlFor="gradingDouble">
+                      Double Letter
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               <div className="mb-3 ddr-width" ref={diamondQualityDropdownRef}>
                 <label className="dropdown-label text-black">Diamond Quality</label>
                 <div className={`dropdown ${diamondQualityDropdownOpen ? "active" : ""}`}>
@@ -1397,20 +1439,27 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   </div>
                   {diamondQualityDropdownOpen && (
                     <div className="dropdown-list">
-                      {diamondQualityStatic.map((quality) => (
-                        <label className="dropdown-item" key={quality.id}>
-                          <input
-                            type="checkbox"
-                            value={quality.value}
-                            checked={diamondQualities.includes(quality.value)}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              toggleDiamondQuality(quality);
-                            }}
-                          />
-                          {quality.label}
-                        </label>
-                      ))}
+                      {diamondQualityOptions
+                        .filter((option) => option.type === diamondGrading)
+                        .map((quality) => (
+                          <label className="dropdown-item" key={quality.label}>
+                            <input
+                              type="checkbox"
+                              value={quality.fullLabel}
+                              checked={diamondQualities.includes(quality.fullLabel)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const val = quality.fullLabel;
+                                setDiamondQualities((prev) =>
+                                  prev.includes(val)
+                                    ? prev.filter((q) => q !== val)
+                                    : [...prev, val]
+                                );
+                              }}
+                            />
+                            {quality.fullLabel}
+                          </label>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -2451,26 +2500,56 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     />
                   </div>
 
-                  {/* Diamond Quality Selector */}
+                  {/* Quality Type Selector */}
                   <div className="mb-3">
-                    <label className="form-label text-black">Diamond Quality</label>
-                    <div className="d-flex flex-wrap gap-2">
-                      {diamondQualityOptions.map((option) => (
+                    <label className="form-label text-black">Quality Type</label>
+                    <div className="d-flex gap-3">
+                      {["Single Letter", "Double Letter"].map((type) => (
                         <div
-                          className={`border rounded p-2 cursor-pointer ${centerStoneDiamondQuality === option.label ? 'bg-secondary text-white' : 'bg-light text-black'}`}
-                          key={option.label}
+                          key={type}
+                          className={`border rounded p-2 px-3 cursor-pointer ${centerStoneQualityType === type ? 'bg-primary text-white' : 'bg-light text-black'}`}
                           onClick={() => {
-                            setCenterStoneDiamondQuality(option.label);
-                            setCenterStoneColorQuality(option.color);
-                            setCenterStoneClarity(option.clarity);
+                            setCenterStoneQualityType(type);
+                            // Reset dependent fields when type changes
+                            setCenterStoneDiamondQuality("");
+                            setCenterStoneColorQuality("");
+                            setCenterStoneClarity("");
                           }}
-                          style={{ cursor: 'pointer', minWidth: '120px', textAlign: 'center' }}
+                          style={{ cursor: 'pointer' }}
                         >
-                          {option.fullLabel}
+                          {type}
                         </div>
                       ))}
                     </div>
                   </div>
+
+                  {/* Diamond Quality Selector */}
+                  {centerStoneQualityType && (
+                    <div className="mb-3">
+                      <label className="form-label text-black">Diamond Quality</label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {diamondQualityOptions
+                          .filter(option =>
+                            (centerStoneQualityType === "Single Letter" && option.type === "single") ||
+                            (centerStoneQualityType === "Double Letter" && option.type === "double")
+                          )
+                          .map((option) => (
+                            <div
+                              className={`border rounded p-2 cursor-pointer ${centerStoneDiamondQuality === option.label ? 'bg-secondary text-white' : 'bg-light text-black'}`}
+                              key={option.label}
+                              onClick={() => {
+                                setCenterStoneDiamondQuality(option.label);
+                                setCenterStoneColorQuality(option.color);
+                                setCenterStoneClarity(option.clarity);
+                              }}
+                              style={{ cursor: 'pointer', minWidth: '120px', textAlign: 'center' }}
+                            >
+                              {option.fullLabel}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* 7. Color Quality - Read Only */}
                   <div className="mb-3">
