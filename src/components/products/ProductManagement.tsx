@@ -61,7 +61,11 @@ import { useGetCategoriesQuery } from "../../store/api/categoryApi";
 import { useGetSubCategoriesQuery } from "../../store/api/subCategoryApi";
 import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
-import AddProduct from "./AddProduct"
+import AddProduct from "./AddProduct";
+import AddBraceletsProduct from "./AddBraceletsProduct";
+import AddNecklaceProduct from "./AddNecklaceProduct";
+import AddEarringsProduct from "./AddEarringsProduct";
+import { ProductTypeSelector } from "./ProductTypeSelector";
 
 interface ProductFormData {
   product_id: string;
@@ -100,7 +104,9 @@ interface ProductFormData {
 }
 
 export function ProductManagement() {
+  const [isTypeSelectorOpen, setIsTypeSelectorOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [selectedProductType, setSelectedProductType] = useState<"Rings" | "Bracelets" | "Necklace" | "Earrings">("Rings");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -675,7 +681,7 @@ export function ProductManagement() {
         </div>
         <Button
           className="bg-gradient-to-r from-[var(--gold)] to-[var(--gold-dark)] hover:opacity-90"
-          onClick={() => setIsAddOpen(true)}
+          onClick={() => setIsTypeSelectorOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Product
@@ -840,18 +846,61 @@ export function ProductManagement() {
         </CardContent>
       </Card>
 
-      {/* Add Product Modal */}
-    {isAddOpen && (
-      <AddProduct
-        show={isAddOpen}
-        handleClose={handleCloseAdd}
-        categories={categories}
-        subCategories={subCategories}
-        onSuccess={() => {
-          refetch();
+      {/* Product Type Selector Modal */}
+      <ProductTypeSelector
+        show={isTypeSelectorOpen}
+        handleClose={() => setIsTypeSelectorOpen(false)}
+        onSelectType={(type) => {
+          setSelectedProductType(type);
+          setIsAddOpen(true);
         }}
       />
-    )}
+
+      {/* Add Product Modal */}
+      {isAddOpen && selectedProductType === "Rings" && (
+        <AddProduct
+          show={isAddOpen}
+          handleClose={handleCloseAdd}
+          categories={categories}
+          subCategories={subCategories}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
+      {isAddOpen && selectedProductType === "Bracelets" && (
+        <AddBraceletsProduct
+          show={isAddOpen}
+          handleClose={handleCloseAdd}
+          categories={categories}
+          subCategories={subCategories}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
+      {isAddOpen && selectedProductType === "Necklace" && (
+        <AddNecklaceProduct
+          show={isAddOpen}
+          handleClose={handleCloseAdd}
+          categories={categories}
+          subCategories={subCategories}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
+      {isAddOpen && selectedProductType === "Earrings" && (
+        <AddEarringsProduct
+          show={isAddOpen}
+          handleClose={handleCloseAdd}
+          categories={categories}
+          subCategories={subCategories}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
 
       {/* Edit Product Modal */}
       <Dialog open={isEditOpen} onOpenChange={handleCloseEdit}>

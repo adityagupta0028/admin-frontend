@@ -18,7 +18,7 @@ import {
 import { useGetSubSubCategoriesQuery } from "../../store/api/subSubCategoryApi";
 import { toast } from "sonner";
 
-interface AddProductProps {
+interface AddNecklaceProductProps {
   show: boolean;
   handleClose: () => void;
   categories?: any[];
@@ -34,7 +34,7 @@ type VariantRow = {
   discounted_price: string;  // discount price
 };
 
-function AddProduct({ show, handleClose, categories = [], subCategories = [], onSuccess }: AddProductProps) {
+function AddNecklaceProduct({ show, handleClose, categories = [], subCategories = [], onSuccess }: AddNecklaceProductProps) {
   // Form state
   const [productId, setProductId] = useState<string>("");
   const [productName, setProductName] = useState<string>("");
@@ -991,7 +991,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     <Modal centered show={show} onHide={handleClose} size="lg" className="modal-parent">
       <Modal.Body className="modal-body-scrollable">
         <div className="custom-form-container">
-          <h3 className="mb-4 fw-bold text-center text-black">Add Rings Product</h3>
+          <h3 className="mb-4 fw-bold text-center text-black">Add Necklace Product</h3>
           <p className="text-center text-black">Add a new jewelry item to your catalog.</p>
           <button type="button" className="close-modal-btn" onClick={handleClose}>X</button>
           <form onSubmit={handleSubmit}>
@@ -2974,4 +2974,4 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 }
 
 
-export default AddProduct
+export default AddNecklaceProduct
