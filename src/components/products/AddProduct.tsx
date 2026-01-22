@@ -148,6 +148,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     minDiamondWeight: string;
   }>>({});
 
+
   const [caratMinWeights, setCaratMinWeights] = useState<Record<string, string>>({});
   const [stylesDropdownOpen, setStylesDropdownOpen] = useState(false);
   const [settingFeaturesDropdownOpen, setSettingFeaturesDropdownOpen] = useState(false);
