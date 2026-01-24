@@ -8,8 +8,6 @@ import {
   useGetHoldingMethodsQuery,
   useGetBandProfileShapesQuery,
   useGetBandWidthCategoriesQuery,
-  useGetBandFitsQuery,
-  useGetShankTreatmentsQuery,
   useGetStylesQuery,
   useGetSettingFeaturesQuery,
   useGetMotifThemesQuery,
@@ -51,6 +49,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [subCategoryDropdownOpen, setSubCategoryDropdownOpen] = useState(false);
   const [subSubCategoryDropdownOpen, setSubSubCategoryDropdownOpen] = useState(false);
+  const [styleSubCategoryDropdownOpen, setStyleSubCategoryDropdownOpen] = useState(false);
   const [variants, setVariants] = useState<VariantRow[]>([]);
 
   // Metal Type
@@ -102,7 +101,9 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   const [holdingMethods, setHoldingMethods] = useState<string>("");
   const [bandProfileShapes, setBandProfileShapes] = useState<string>("");
   const [bandWidthCategories, setBandWidthCategories] = useState<string>("");
-  const [bandFits, setBandFits] = useState<string>("");
+  const [bandFits, setBandFits] = useState<string[]>([]);
+  const [sizeScale, setSizeScale] = useState<string>("");
+  const [styleSubCategory, setStyleSubCategory] = useState<string>("");
   // Collections
   const [collections, setCollections] = useState<string>("");
 
@@ -153,6 +154,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   const [settingFeaturesDropdownOpen, setSettingFeaturesDropdownOpen] = useState(false);
   const [motifThemesDropdownOpen, setMotifThemesDropdownOpen] = useState(false);
   const [ornamentDetailsDropdownOpen, setOrnamentDetailsDropdownOpen] = useState(false);
+  const [bandFitsDropdownOpen, setBandFitsDropdownOpen] = useState(false);
 
   // Refs for dropdowns
   const shankTreatmentsDropdownRef = useRef<HTMLDivElement>(null);
@@ -160,6 +162,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   const settingFeaturesDropdownRef = useRef<HTMLDivElement>(null);
   const motifThemesDropdownRef = useRef<HTMLDivElement>(null);
   const ornamentDetailsDropdownRef = useRef<HTMLDivElement>(null);
+  const bandFitsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Loading state
   const [createProduct, { isLoading }] = useCreateProductMutation();
@@ -170,8 +173,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   const { data: holdingMethodsData } = useGetHoldingMethodsQuery();
   const { data: bandProfileShapesData } = useGetBandProfileShapesQuery();
   const { data: bandWidthCategoriesData } = useGetBandWidthCategoriesQuery();
-  const { data: bandFitsData } = useGetBandFitsQuery();
-  const { data: shankTreatmentsData } = useGetShankTreatmentsQuery();
   const { data: stylesData } = useGetStylesQuery();
   const { data: settingFeaturesData } = useGetSettingFeaturesQuery();
   const { data: motifThemesData } = useGetMotifThemesQuery();
@@ -180,6 +181,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const subCategoryDropdownRef = useRef<HTMLDivElement>(null);
   const subSubCategoryDropdownRef = useRef<HTMLDivElement>(null);
+  const styleSubCategoryDropdownRef = useRef<HTMLDivElement>(null);
   const diamondDropdownRef = useRef<HTMLDivElement>(null);
   const diamondQualityDropdownRef = useRef<HTMLDivElement>(null);
   const ringSizeDropdownRef = useRef<HTMLDivElement>(null);
@@ -263,6 +265,59 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     { id: 2, label: "Very Good", value: "very good" },
     { id: 3, label: "Good", value: "good" },
     { id: 4, label: "Fair", value: "fair" },
+  ];
+
+  const assemblyTypeStatic = [
+    { id: 1, label: "Fixed", value: "fixed" },
+    { id: 2, label: "Adjustable", value: "adjustable" },
+    { id: 3, label: "Extendable", value: "extendable" },
+    { id: 4, label: "Modular", value: "modular" },
+  ];
+
+  const chainTypeStatic = [
+    { id: 1, label: "Cable Chain", value: "cable-chain" },
+    { id: 2, label: "Box Chain", value: "box-chain" },
+    { id: 3, label: "Rope Chain", value: "rope-chain" },
+    { id: 4, label: "Figaro Chain", value: "figaro-chain" },
+    { id: 5, label: "Snake Chain", value: "snake-chain" },
+    { id: 6, label: "Curb Chain", value: "curb-chain" },
+    { id: 7, label: "Bead Chain", value: "bead-chain" },
+  ];
+
+  const closureTypeStatic = [
+    { id: 1, label: "Lobster Clasp", value: "lobster-clasp" },
+    { id: 2, label: "Spring Ring", value: "spring-ring" },
+    { id: 3, label: "Toggle", value: "toggle" },
+    { id: 4, label: "Magnetic", value: "magnetic" },
+    { id: 5, label: "Box Clasp", value: "box-clasp" },
+    { id: 6, label: "Hook and Eye", value: "hook-and-eye" },
+  ];
+
+  const stoneSettingStatic = [
+    { id: 1, label: "Prong Setting", value: "prong-setting" },
+    { id: 2, label: "Bezel Setting", value: "bezel-setting" },
+    { id: 3, label: "Channel Setting", value: "channel-setting" },
+    { id: 4, label: "Pave Setting", value: "pave-setting" },
+    { id: 5, label: "Tension Setting", value: "tension-setting" },
+    { id: 6, label: "Invisible Setting", value: "invisible-setting" },
+  ];
+
+  const finishDetailStatic = [
+    { id: 1, label: "Polished", value: "polished" },
+    { id: 2, label: "Brushed", value: "brushed" },
+    { id: 3, label: "Matte", value: "matte" },
+    { id: 4, label: "Hammered", value: "hammered" },
+    { id: 5, label: "Satin", value: "satin" },
+    { id: 6, label: "Textured", value: "textured" },
+  ];
+
+  const sizeScaleStatic = [
+    { id: 1, label: "US", value: "us" },
+    { id: 2, label: "UK", value: "uk" },
+    { id: 3, label: "EU", value: "eu" },
+    { id: 4, label: "AU", value: "au" },
+    { id: 5, label: "JP", value: "jp" },
+    { id: 6, label: "CN", value: "cn" },
   ];
 
   const ringSizeStatic = ["4", "5", "6", "7", "8", "9", "10", "11", "12"];
@@ -567,6 +622,14 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     );
   };
 
+  const toggleBandFit = (value: string) => {
+    setBandFits((prev) =>
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
+    );
+  };
+
   // Close dropdowns if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -578,6 +641,9 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       }
       if (subSubCategoryDropdownRef.current && !subSubCategoryDropdownRef.current.contains(event.target as Node)) {
         setSubSubCategoryDropdownOpen(false);
+      }
+      if (styleSubCategoryDropdownRef.current && !styleSubCategoryDropdownRef.current.contains(event.target as Node)) {
+        setStyleSubCategoryDropdownOpen(false);
       }
       if (diamondDropdownRef.current && !diamondDropdownRef.current.contains(event.target as Node)) {
         setDiamondDropdownOpen(false);
@@ -605,6 +671,9 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       }
       if (ornamentDetailsDropdownRef.current && !ornamentDetailsDropdownRef.current.contains(event.target as Node)) {
         setOrnamentDetailsDropdownOpen(false);
+      }
+      if (bandFitsDropdownRef.current && !bandFitsDropdownRef.current.contains(event.target as Node)) {
+        setBandFitsDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -649,7 +718,9 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     setHoldingMethods("");
     setBandProfileShapes("");
     setBandWidthCategories("");
-    setBandFits("");
+    setBandFits([]);
+    setSizeScale("");
+    setStyleSubCategory("");
     setCollections("");
     setShankTreatments([]);
     setStyles([]);
@@ -709,7 +780,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       return;
     }
     if (!holdingMethods) {
-      toast.error("Please select Holding Methods");
+      toast.error("Please select Setting Type");
       return;
     }
     if (!bandProfileShapes) {
@@ -720,8 +791,8 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       toast.error("Please select Band Width Categories");
       return;
     }
-    if (!bandFits) {
-      toast.error("Please select Band Fits");
+    if (bandFits.length === 0) {
+      toast.error("Please select at least one Stone Setting");
       return;
     }
     if (shankTreatments.length === 0) {
@@ -905,14 +976,18 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       if (holdingMethods) {
         formData.append("holdingMethods", holdingMethods);
       }
+      if (styleSubCategory) {
+        formData.append("styleSubCategory", styleSubCategory);
+      }
       if (bandProfileShapes) {
         formData.append("bandProfileShapes", bandProfileShapes);
       }
       if (bandWidthCategories) {
         formData.append("bandWidthCategories", bandWidthCategories);
       }
-      if (bandFits) {
-        formData.append("bandFits", bandFits);
+      bandFits.forEach((value) => formData.append("bandFits", value));
+      if (sizeScale) {
+        formData.append("sizeScale", sizeScale);
       }
 
       // Multi-select dropdown fields (array of ObjectIds)
@@ -1534,21 +1609,21 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
             </div>
             {/* Radio Button Fields - Single Select */}
             <div className="mb-3">
-              <label className="form-label text-black">Setting Configurations *</label>
+              <label className="form-label text-black">Assembly Type *</label>
               <div>
-                {settingConfigurationsData?.data?.map((item) => (
-                  <div className="form-check form-check-inline" key={item._id}>
+                {assemblyTypeStatic.map((item) => (
+                  <div className="form-check form-check-inline" key={item.id}>
                     <input
                       className="form-check-input"
                       type="radio"
                       name="settingConfigurations"
-                      id={`settingConfig-${item._id}`}
-                      value={item._id}
-                      checked={settingConfigurations === item._id}
+                      id={`assemblyType-${item.id}`}
+                      value={item.value}
+                      checked={settingConfigurations === item.value}
                       onChange={(e) => setSettingConfigurations(e.target.value)}
                     />
-                    <label className="form-check-label text-black" htmlFor={`settingConfig-${item._id}`}>
-                      {item.displayName}
+                    <label className="form-check-label text-black" htmlFor={`assemblyType-${item.id}`}>
+                      {item.label}
                     </label>
                   </div>
                 ))}
@@ -1560,8 +1635,8 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               <div className="w-100" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 {caratWeightOptions.map((weight, index) => {
                   const isSelected = caratWeights.includes(weight);
-                  const selectedSetting = settingConfigurationsData?.data?.find(item => item._id === settingConfigurations);
-                  const isTrilogyOrToiEtMoi = selectedSetting?.displayName === "Trilogy Setting" || selectedSetting?.displayName === "Toi Et Moi Setting";
+                  const selectedAssembly = assemblyTypeStatic.find(item => item.value === settingConfigurations);
+                  const isTrilogyOrToiEtMoi = selectedAssembly?.label === "Trilogy Setting" || selectedAssembly?.label === "Toi Et Moi Setting";
 
                   return (
                     <div className="d-flex flex-column gap-1" key={index} style={{ width: 'calc(25% - 8px)', minWidth: '150px', marginBottom: '10px' }}>
@@ -1896,7 +1971,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               {/* Ring Size dropdown - only when Ring is selected */}
               {sizeType === "ring" && (
                 <div className="mb-3 ddr-width" ref={ringSizeDropdownRef}>
-                  <label className="dropdown-label text-black">Ring Size</label>
+                  <label className="dropdown-label text-black">Necklace Size</label>
                   <div className={`dropdown ${ringSizeDropdownOpen ? "active" : ""}`}>
                     <div
                       className="dropdown-select"
@@ -1911,7 +1986,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                     </div>
                     {ringSizeDropdownOpen && (
                       <div className="dropdown-list">
-                        {ringSizeStatic.map((size) => (
+                        {necklaceSizeStatic.map((size) => (
                           <label className="dropdown-item" key={size}>
                             <input
                               type="checkbox"
@@ -1975,29 +2050,86 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
 
 
             <div className="mb-3">
-              <label className="form-label text-black">Shank Configurations *</label>
+              <label className="form-label text-black">Chain Type *</label>
               <div>
-                {shankConfigurationsData?.data?.map((item) => (
-                  <div className="form-check form-check-inline" key={item._id}>
+                {chainTypeStatic.map((item) => (
+                  <div className="form-check form-check-inline" key={item.id}>
                     <input
                       className="form-check-input"
                       type="radio"
                       name="shankConfigurations"
-                      id={`shankConfig-${item._id}`}
-                      value={item._id}
-                      checked={shankConfigurations === item._id}
+                      id={`chainType-${item.id}`}
+                      value={item.value}
+                      checked={shankConfigurations === item.value}
                       onChange={(e) => setShankConfigurations(e.target.value)}
                     />
-                    <label className="form-check-label text-black" htmlFor={`shankConfig-${item._id}`}>
-                      {item.displayName}
+                    <label className="form-check-label text-black" htmlFor={`chainType-${item.id}`}>
+                      {item.label}
                     </label>
                   </div>
                 ))}
               </div>
             </div>
 
+            <div className="dropdown-multi">
+              <div className="mb-3 ddr-width" ref={styleSubCategoryDropdownRef}>
+                <label className="dropdown-label text-black">Style (Sub-Category linked)</label>
+                <div className={`dropdown ${styleSubCategoryDropdownOpen ? "active" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => {
+                      if (!selectedCategory) {
+                        toast.error("Please select a category first");
+                        return;
+                      }
+                      setStyleSubCategoryDropdownOpen(!styleSubCategoryDropdownOpen);
+                    }}
+                  >
+                    <span>
+                      {styleSubCategory
+                        ? (() => {
+                            const selectedSubCat = filteredSubCategories.find((subCat) => getSubCategoryId(subCat) === styleSubCategory);
+                            return selectedSubCat ? getSubCategoryName(selectedSubCat) : "Select...";
+                          })()
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
+                  </div>
+                  {styleSubCategoryDropdownOpen && (
+                    <div className="dropdown-list">
+                      {filteredSubCategories.length > 0 ? (
+                        filteredSubCategories.map((subCategory) => {
+                          const subCategoryId = getSubCategoryId(subCategory);
+                          const subCategoryName = getSubCategoryName(subCategory);
+                          return (
+                            <div
+                              className={`dropdown-item ${styleSubCategory === subCategoryId ? "selected" : ""}`}
+                              key={subCategoryId}
+                              onClick={() => {
+                                setStyleSubCategory(subCategoryId);
+                                setStyleSubCategoryDropdownOpen(false);
+                              }}
+                              style={{ cursor: "pointer" }}
+                            >
+                              {subCategoryName}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="dropdown-item">
+                          {!selectedCategory
+                            ? "Please select a category first"
+                            : "No subcategories available for selected category"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="mb-3">
-              <label className="form-label text-black">Holding Methods *</label>
+              <label className="form-label text-black">Setting Type (HoldingMethod linked) *</label>
               <div>
                 {holdingMethodsData?.data?.map((item) => (
                   <div className="form-check form-check-inline" key={item._id}>
@@ -2019,28 +2151,28 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
             </div>
 
             <div className="mb-3">
-              <label className="form-label text-black">Band Profile Shapes *</label>
+              <label className="form-label text-black">Lock (ClosureType linked) *</label>
               <div>
-                {bandProfileShapesData?.data?.map((item) => (
-                  <div className="form-check form-check-inline" key={item._id}>
+                {closureTypeStatic.map((item) => (
+                  <div className="form-check form-check-inline" key={item.id}>
                     <input
                       className="form-check-input"
                       type="radio"
                       name="bandProfileShapes"
-                      id={`bandProfileShape-${item._id}`}
-                      value={item._id}
-                      checked={bandProfileShapes === item._id}
+                      id={`closureType-${item.id}`}
+                      value={item.value}
+                      checked={bandProfileShapes === item.value}
                       onChange={(e) => setBandProfileShapes(e.target.value)}
                     />
-                    <label className="form-check-label text-black" htmlFor={`bandProfileShape-${item._id}`}>
-                      {item.displayName}
+                    <label className="form-check-label text-black" htmlFor={`closureType-${item.id}`}>
+                      {item.label}
                     </label>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="mb-3">
+            {/* <div className="mb-3">
               <label className="form-label text-black">Band Width Categories *</label>
               <div>
                 {bandWidthCategoriesData?.data?.map((item) => (
@@ -2060,34 +2192,49 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
-            <div className="mb-3">
-              <label className="form-label text-black">Band Fits *</label>
-              <div>
-                {bandFitsData?.data?.map((item) => (
-                  <div className="form-check form-check-inline" key={item._id}>
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="bandFits"
-                      id={`bandFit-${item._id}`}
-                      value={item._id}
-                      checked={bandFits === item._id}
-                      onChange={(e) => setBandFits(e.target.value)}
-                    />
-                    <label className="form-check-label text-black" htmlFor={`bandFit-${item._id}`}>
-                      {item.displayName}
-                    </label>
+            <div className="dropdown-multi">
+              <div className="mb-3 ddr-width" ref={bandFitsDropdownRef}>
+                <label className="dropdown-label text-black">Stone Setting *</label>
+                <div className={`dropdown ${bandFitsDropdownOpen ? "active" : ""}`}>
+                  <div
+                    className="dropdown-select"
+                    onClick={() => setBandFitsDropdownOpen(!bandFitsDropdownOpen)}
+                  >
+                    <span>
+                      {bandFits.length
+                        ? `${bandFits.length} item${bandFits.length > 1 ? 's' : ''} selected`
+                        : "Select..."}
+                    </span>
+                    <i className="dropdown-arrow"></i>
                   </div>
-                ))}
+                  {bandFitsDropdownOpen && (
+                    <div className="dropdown-list">
+                      {stoneSettingStatic.map((item) => (
+                        <label className="dropdown-item" key={item.id}>
+                          <input
+                            type="checkbox"
+                            value={item.value}
+                            checked={bandFits.includes(item.value)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleBandFit(item.value);
+                            }}
+                          />
+                          {item.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Multi-Select Dropdown Fields */}
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={shankTreatmentsDropdownRef}>
-                <label className="dropdown-label text-black">Shank Treatments *</label>
+                <label className="dropdown-label text-black">Finish Detail *</label>
                 <div className={`dropdown ${shankTreatmentsDropdownOpen ? "active" : ""}`}>
                   <div
                     className="dropdown-select"
@@ -2102,18 +2249,18 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                   </div>
                   {shankTreatmentsDropdownOpen && (
                     <div className="dropdown-list">
-                      {shankTreatmentsData?.data?.map((item) => (
-                        <label className="dropdown-item" key={item._id}>
+                      {finishDetailStatic.map((item) => (
+                        <label className="dropdown-item" key={item.id}>
                           <input
                             type="checkbox"
-                            value={item._id}
-                            checked={shankTreatments.includes(item._id)}
+                            value={item.value}
+                            checked={shankTreatments.includes(item.value)}
                             onChange={(e) => {
                               e.stopPropagation();
-                              toggleShankTreatment(item._id);
+                              toggleShankTreatment(item.value);
                             }}
                           />
-                          {item.displayName}
+                          {item.label}
                         </label>
                       ))}
                     </div>
@@ -2229,7 +2376,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               </div>
             </div>
 
-            <div className="dropdown-multi">
+            {/* <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={ornamentDetailsDropdownRef}>
                 <label className="dropdown-label text-black">Ornament Details *</label>
                 <div className={`dropdown ${ornamentDetailsDropdownOpen ? "active" : ""}`}>
@@ -2263,6 +2410,28 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                     </div>
                   )}
                 </div>
+              </div>
+            </div> */}
+
+            <div className="mb-3">
+              <label className="form-label text-black">Size Scale</label>
+              <div>
+                {sizeScaleStatic.map((item) => (
+                  <div className="form-check form-check-inline" key={item.id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="sizeScale"
+                      id={`sizeScale-${item.id}`}
+                      value={item.value}
+                      checked={sizeScale === item.value}
+                      onChange={(e) => setSizeScale(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`sizeScale-${item.id}`}>
+                      {item.label}
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -2322,11 +2491,11 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
 
                   {/* 2. Average Width - Integer input with 'mm' as default text */}
                   <div className="mb-3">
-                    <label className="form-label text-black">Average Width (mm)</label>
+                    <label className="form-label text-black">Dimmensions</label>
                     <input
-                      type="number"
+                      type="text"
                       className="form-control"
-                      placeholder="mm"
+                      placeholder="Dimmensions"
                       value={averageWidth}
                       onChange={(e) => setAverageWidth(e.target.value)}
                     />
