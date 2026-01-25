@@ -125,7 +125,6 @@ export function ProductManagement() {
   const [newCaratWeight, setNewCaratWeight] = useState<string>("");
   const [newRingSize, setNewRingSize] = useState<string>("");
   const [newNecklaceSize, setNewNecklaceSize] = useState<string>("");
-
   // API hooks
   const { data: categoriesResponse } = useGetCategoriesQuery();
   const { data: subCategoriesResponse } = useGetSubCategoriesQuery(
