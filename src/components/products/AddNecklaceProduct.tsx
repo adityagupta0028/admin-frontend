@@ -149,6 +149,23 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     minDiamondWeight: string;
   }>>({});
 
+  // Stone Details Form Fields
+  const [hasStoneDetailsForm, setHasStoneDetailsForm] = useState<boolean>(false);
+  const [isStoneDetailsFormAccordionOpen, setIsStoneDetailsFormAccordionOpen] = useState<boolean>(false);
+  const [stoneDetailsStones, setStoneDetailsStones] = useState<string[]>([]);
+  const [stoneDetailsData, setStoneDetailsData] = useState<Record<string, {
+    origins: string[];
+    shapes: string[];
+    dimensions: string;
+    gemstoneType: string;
+    quantity: string;
+    avgColor: string;
+    avgClarity: string;
+    minDiamondWeight: string;
+  }>>({});
+  const [stoneDetailsCertified, setStoneDetailsCertified] = useState<string>("No");
+  const [stoneDetailsColor, setStoneDetailsColor] = useState<string>("");
+
   const [caratMinWeights, setCaratMinWeights] = useState<Record<string, string>>({});
   const [stylesDropdownOpen, setStylesDropdownOpen] = useState(false);
   const [settingFeaturesDropdownOpen, setSettingFeaturesDropdownOpen] = useState(false);
@@ -571,6 +588,54 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     });
   };
 
+  // Stone Details Form Handlers
+  const toggleStoneDetailStone = (stone: string) => {
+    setStoneDetailsStones((prev) => {
+      const isRemoving = prev.includes(stone);
+      if (isRemoving) {
+        setStoneDetailsData((dataPrev) => {
+          const newData = { ...dataPrev };
+          delete newData[stone];
+          return newData;
+        });
+        return prev.filter((s) => s !== stone);
+      } else {
+        setStoneDetailsData((dataPrev) => ({
+          ...dataPrev,
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "" }
+        }));
+        return [...prev, stone];
+      }
+    });
+  };
+
+  const updateStoneDetailData = (stone: string, field: string, value: any) => {
+    setStoneDetailsData((prev) => ({
+      ...prev,
+      [stone]: {
+        ...prev[stone],
+        [field]: value
+      }
+    }));
+  };
+
+  const toggleStoneDetailOrigin = (stone: string, origin: string) => {
+    setStoneDetailsData((prev) => {
+      const currentOrigins = prev[stone]?.origins || [];
+      const updatedOrigins = currentOrigins.includes(origin)
+        ? currentOrigins.filter((o) => o !== origin)
+        : [...currentOrigins, origin];
+
+      return {
+        ...prev,
+        [stone]: {
+          ...prev[stone],
+          origins: updatedOrigins
+        }
+      };
+    });
+  };
+
   // Toggle stone
   const toggleStone = (stone: string) => {
     setStones((prev) =>
@@ -740,6 +805,13 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     setCenterStoneQualityType("");
     setHasSideStone(false);
     setCaratMinWeights({});
+    // Reset Stone Details Form
+    setHasStoneDetailsForm(false);
+    setIsStoneDetailsFormAccordionOpen(false);
+    setStoneDetailsStones([]);
+    setStoneDetailsData({});
+    setStoneDetailsCertified("No");
+    setStoneDetailsColor("");
   };
 
   // Handle form submission
@@ -923,6 +995,29 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
         });
         if (sideStoneDetails.trim()) formData.append("side_stone_details", sideStoneDetails.trim());
       }
+
+      // Stone Details Form
+      if (hasStoneDetailsForm) {
+        formData.append("stone_details_certified", stoneDetailsCertified);
+        if (stoneDetailsColor) formData.append("stone_details_color", stoneDetailsColor);
+
+        stoneDetailsStones.forEach((stone) => {
+          formData.append("stone_details_stone", stone);
+          const data = stoneDetailsData[stone];
+          if (data) {
+            const stoneKey = stone.replace(/\s+/g, '_');
+            data.origins.forEach(origin => formData.append(`sd_${stoneKey}_origin`, origin));
+            if (data.quantity) formData.append(`sd_${stoneKey}_quantity`, data.quantity);
+            if (data.avgColor) formData.append(`sd_${stoneKey}_avg_color`, data.avgColor);
+            if (data.avgClarity) formData.append(`sd_${stoneKey}_avg_clarity`, data.avgClarity);
+            if (data.minDiamondWeight) formData.append(`sd_${stoneKey}_min_diamond_weight`, data.minDiamondWeight);
+            if (data.dimensions) formData.append(`sd_${stoneKey}_dimensions`, data.dimensions);
+            if (data.gemstoneType) formData.append(`sd_${stoneKey}_gemstone_type`, data.gemstoneType);
+            data.shapes.forEach(shape => formData.append(`sd_${stoneKey}_shape`, shape));
+          }
+        });
+      }
+
       if (stoneDetails.trim()) formData.append("stone_details", stoneDetails.trim());
 
       // Gender
@@ -2575,6 +2670,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                 </div>
               )}
             </div>
+
             <div className="mb-3 border rounded p-3">
               <div
                 className="d-flex justify-content-between align-items-center cursor-pointer"
@@ -2629,18 +2725,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                           Gemstone
                         </label>
                       </div>
-                      <div className="form-check w-50">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id="cs-stone-none"
-                          checked={stones.includes("None")}
-                          onChange={() => toggleStone("None")}
-                        />
-                        <label className="form-check-label text-black" htmlFor="cs-stone-none">
-                          None
-                        </label>
-                      </div>
+
                     </div>
                   </div>
 
@@ -2913,8 +2998,8 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                         <span className="badge bg-primary me-2">{stone}</span> Details
                       </h6>
 
-                      {/* Diamond Origin - Hidden if stone is Gemstone */}
-                      {stone !== "Gemstone" && (
+
+                      {(
                         <div className="mb-3">
                           <label className="form-label text-black">Diamond Origin</label>
                           <div className="w-100">
@@ -3055,6 +3140,284 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                 </div>
               )}
             </div>
+
+
+
+            <div className={`mb-3 border rounded p-3 ${!hasStoneDetailsForm ? 'bg-light' : ''}`}>
+              <div
+                className="d-flex justify-content-between align-items-center"
+              >
+                <div className="d-flex align-items-center gap-3">
+                  <h5 className="text-black mb-0">Stone Details form</h5>
+                  <div className="form-check form-switch m-0">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      id="stoneDetailsFormToggle"
+                      checked={hasStoneDetailsForm}
+                      onChange={(e) => {
+                        setHasStoneDetailsForm(e.target.checked);
+                        if (!e.target.checked) setIsStoneDetailsFormAccordionOpen(false);
+                        else setIsStoneDetailsFormAccordionOpen(true);
+                      }}
+                    />
+                  </div>
+                </div>
+                {hasStoneDetailsForm && (
+                  <div
+                    onClick={() => setIsStoneDetailsFormAccordionOpen(!isStoneDetailsFormAccordionOpen)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className={`fas fa-chevron-${isStoneDetailsFormAccordionOpen ? 'up' : 'down'}`}></i>
+                  </div>
+                )}
+              </div>
+
+              {hasStoneDetailsForm && (
+                <div className="mt-3">
+                  {/* IGI / GIA Certified Field */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">IGI / GIA Certified</label>
+                    <div className="d-flex gap-3">
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="stoneDetailsCertified"
+                          id="sd-certified-yes"
+                          value="Yes"
+                          checked={stoneDetailsCertified === "Yes"}
+                          onChange={(e) => setStoneDetailsCertified(e.target.value)}
+                        />
+                        <label className="form-check-label text-black" htmlFor="sd-certified-yes">
+                          Yes
+                        </label>
+                      </div>
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="stoneDetailsCertified"
+                          id="sd-certified-no"
+                          value="No"
+                          checked={stoneDetailsCertified === "No"}
+                          onChange={(e) => setStoneDetailsCertified(e.target.value)}
+                        />
+                        <label className="form-check-label text-black" htmlFor="sd-certified-no">
+                          No
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Color Field */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Color</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter Color"
+                      value={stoneDetailsColor}
+                      onChange={(e) => setStoneDetailsColor(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 1. Stone selection */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Stone</label>
+                    <div className="w-100 half-divide">
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="sd-stone-diamond"
+                          checked={stoneDetailsStones.includes("Diamond")}
+                          onChange={() => toggleStoneDetailStone("Diamond")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="sd-stone-diamond">
+                          Diamond
+                        </label>
+                      </div>
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="sd-stone-color-diamond"
+                          checked={stoneDetailsStones.includes("Color Diamond")}
+                          onChange={() => toggleStoneDetailStone("Color Diamond")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="sd-stone-color-diamond">
+                          Color Diamond
+                        </label>
+                      </div>
+                    </div>
+                    <div className="w-100 half-divide">
+                      <div className="form-check w-50">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="sd-stone-gemstone"
+                          checked={stoneDetailsStones.includes("Gemstone")}
+                          onChange={() => toggleStoneDetailStone("Gemstone")}
+                        />
+                        <label className="form-check-label text-black" htmlFor="sd-stone-gemstone">
+                          Gemstone
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sub-form for each selected stone */}
+                  {stoneDetailsStones.map((stone) => (
+                    <div key={stone} className="mb-4 p-3 border rounded bg-white shadow-sm">
+                      <h6 className="text-black fw-bold mb-3 d-flex align-items-center">
+                        <span className="badge bg-primary me-2">{stone}</span> Details
+                      </h6>
+
+                      {/* Diamond Origin - Hidden if stone is Gemstone */}
+                      {(
+                        <div className="mb-3">
+                          <label className="form-label text-black">Diamond Origin</label>
+                          <div className="w-100">
+                            {diamondOriginStatic.map((origin) => (
+                              <div className="form-check form-check-inline" key={`sd-${stone}-origin-${origin.id}`}>
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`sd-${stone.replace(/\s+/g, '_')}-origin-${origin.value}`}
+                                  value={origin.value}
+                                  checked={(stoneDetailsData[stone]?.origins || []).includes(origin.value)}
+                                  onChange={() => toggleStoneDetailOrigin(stone, origin.value)}
+                                />
+                                <label className="form-check-label text-black" htmlFor={`sd-${stone.replace(/\s+/g, '_')}-origin-${origin.value}`}>
+                                  {origin.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mb-3">
+                        <label className="form-label text-black">
+                          {stone === "Gemstone" ? "Shape" : "Diamond Shape"}
+                        </label>
+
+                        <div className="d-flex flex-wrap gap-2">
+                          {diamondShapeStatic.map((shape) => {
+                            const selectedShapes = stoneDetailsData[stone]?.shapes || [];
+
+                            return (
+                              <div className="form-check form-check-inline" key={shape}>
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  name={`sd-${stone.replace(/\s+/g, "_")}-shapes`}
+                                  id={`sd-${stone.replace(/\s+/g, "_")}-shape-${shape}`}
+                                  value={shape}
+                                  checked={selectedShapes.includes(shape)}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+
+                                    const updatedShapes = selectedShapes.includes(value)
+                                      ? selectedShapes.filter((s) => s !== value)
+                                      : [...selectedShapes, value];
+
+                                    updateStoneDetailData(stone, "shapes", updatedShapes);
+                                  }}
+                                />
+                                <label
+                                  className="form-check-label text-black"
+                                  htmlFor={`sd-${stone.replace(/\s+/g, "_")}-shape-${shape}`}
+                                >
+                                  {shape}
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {stone === "Gemstone" ? (
+                        <>
+                          <div className="mb-3">
+                            <label className="form-label text-black">Dimensions</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Enter Dimensions"
+                              value={stoneDetailsData[stone]?.dimensions || ""}
+                              onChange={(e) => updateStoneDetailData(stone, "dimensions", e.target.value)}
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label className="form-label text-black">Gemstone Type</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Enter Gemstone Type"
+                              value={stoneDetailsData[stone]?.gemstoneType || ""}
+                              onChange={(e) => updateStoneDetailData(stone, "gemstoneType", e.target.value)}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="mb-3">
+                          <label className="form-label text-black">Min Diamond Weight</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Enter Min Diamond Weight"
+                            value={stoneDetailsData[stone]?.minDiamondWeight || ""}
+                            onChange={(e) => updateStoneDetailData(stone, "minDiamondWeight", e.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      {/* Quantity */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Quantity</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          placeholder={`Enter Quantity for ${stone}`}
+                          value={stoneDetailsData[stone]?.quantity || ""}
+                          onChange={(e) => updateStoneDetailData(stone, "quantity", e.target.value)}
+                        />
+                      </div>
+
+                      {/* Average Color */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Average Color</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={`Enter Average Color for ${stone}`}
+                          value={stoneDetailsData[stone]?.avgColor || ""}
+                          onChange={(e) => updateStoneDetailData(stone, "avgColor", e.target.value)}
+                        />
+                      </div>
+
+                      {/* Average Clarity */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Average Clarity</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={`Enter Average Clarity for ${stone}`}
+                          value={stoneDetailsData[stone]?.avgClarity || ""}
+                          onChange={(e) => updateStoneDetailData(stone, "avgClarity", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+
+
             {/* <div className="mb-3">
               <label className="form-label text-black">Stone Details</label>
               <textarea
@@ -3065,6 +3428,9 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                 onChange={(e) => setStoneDetails(e.target.value)}
               ></textarea>
             </div> */}
+
+
+
             <div className="mb-3">
               <label className="form-label text-black">Status</label>
               <select
