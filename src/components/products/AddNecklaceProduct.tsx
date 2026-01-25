@@ -337,7 +337,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     { label: "Best", color: "D", clarity: "VVS", fullLabel: "Best - D, VVS", type: "single" },
     { label: "Better", color: "E", clarity: "VS1", fullLabel: "Better - E, VS1", type: "single" },
     { label: "Good", color: "F", clarity: "VS2", fullLabel: "Good - F, VS2", type: "single" },
-    { label: "Fair", color: "G", clarity: "SI1", fullLabel: "Fair - G, SI1", type: "single" },
     { label: "DQ1", color: "DE", clarity: "CL1", fullLabel: "DQ1 - DE, CL1", type: "double" },
     { label: "DQ2", color: "EF", clarity: "CL2", fullLabel: "DQ2 - EF, CL2", type: "double" },
     { label: "DQ3", color: "FG", clarity: "CL3", fullLabel: "DQ3 - FG, CL3", type: "double" },
@@ -1841,13 +1840,13 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                     className="form-check-input"
                     type="radio"
                     name="productSpecials"
-                    id="productSpecialsNewArrivals"
-                    value="New Arrivals"
-                    checked={productSpecials === "New Arrivals"}
+                    id="productSpecialsNewIn"
+                    value="New In"
+                    checked={productSpecials === "New In"}
                     onChange={(e) => setProductSpecials(e.target.value)}
                   />
-                  <label className="form-check-label text-black" htmlFor="productSpecialsNewArrivals">
-                    New Arrivals
+                  <label className="form-check-label text-black" htmlFor="productSpecialsNewIn">
+                    New In
                   </label>
                 </div>
 
@@ -1856,13 +1855,13 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                     className="form-check-input"
                     type="radio"
                     name="productSpecials"
-                    id="productSpecialsTopSellers"
-                    value="Top Sellers"
-                    checked={productSpecials === "Top Sellers"}
+                    id="productSpecialsBestsellers"
+                    value="Bestsellers"
+                    checked={productSpecials === "Bestsellers"}
                     onChange={(e) => setProductSpecials(e.target.value)}
                   />
-                  <label className="form-check-label text-black" htmlFor="productSpecialsTopSellers">
-                    Top Sellers
+                  <label className="form-check-label text-black" htmlFor="productSpecialsBestsellers">
+                    Bestsellers
                   </label>
                 </div>
 
@@ -1871,13 +1870,28 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                     className="form-check-input"
                     type="radio"
                     name="productSpecials"
-                    id="productSpecialsFeaturedRings"
-                    value="Featured Rings"
-                    checked={productSpecials === "Featured Rings"}
+                    id="productSpecialsFeatured"
+                    value="Featured"
+                    checked={productSpecials === "Featured"}
                     onChange={(e) => setProductSpecials(e.target.value)}
                   />
-                  <label className="form-check-label text-black" htmlFor="productSpecialsFeaturedRings">
-                    Featured Rings
+                  <label className="form-check-label text-black" htmlFor="productSpecialsFeatured">
+                    Featured
+                  </label>
+                </div>
+
+                <div className="form-check form-check-inline">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="productSpecials"
+                    id="productSpecialsTrending"
+                    value="Trending"
+                    checked={productSpecials === "Trending"}
+                    onChange={(e) => setProductSpecials(e.target.value)}
+                  />
+                  <label className="form-check-label text-black" htmlFor="productSpecialsTrending">
+                    Trending
                   </label>
                 </div>
               </div>
@@ -1933,8 +1947,8 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               </div>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label text-black">Size Type</label>
+            {/* <div className="mb-3">
+              <label className="form-label text-black">Size Types</label>
               <div>
                 <div className="form-check form-check-inline">
                   <input
@@ -1964,7 +1978,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                   </label>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Size dropdowns */}
             <div className="dropdown-multi">
@@ -2088,9 +2102,9 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                     <span>
                       {styleSubCategory
                         ? (() => {
-                            const selectedSubCat = filteredSubCategories.find((subCat) => getSubCategoryId(subCat) === styleSubCategory);
-                            return selectedSubCat ? getSubCategoryName(selectedSubCat) : "Select...";
-                          })()
+                          const selectedSubCat = filteredSubCategories.find((subCat) => getSubCategoryId(subCat) === styleSubCategory);
+                          return selectedSubCat ? getSubCategoryName(selectedSubCat) : "Select...";
+                        })()
                         : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
@@ -2737,7 +2751,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                   </div>
 
                   {/* Quality Type Selector */}
-                  <div className="mb-3">
+                  {/* <div className="mb-3">
                     <label className="form-label text-black">Quality Type</label>
                     <div className="d-flex gap-3">
                       {["Single Letter", "Double Letter"].map((type) => (
@@ -2757,10 +2771,10 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Diamond Quality Selector */}
-                  {centerStoneQualityType && (
+                  {/* {centerStoneQualityType && (
                     <div className="mb-3">
                       <label className="form-label text-black">Diamond Quality</label>
                       <div className="d-flex flex-wrap gap-2">
@@ -2785,7 +2799,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                           ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   {/* 7. Color Quality - Read Only */}
                   <div className="mb-3">
