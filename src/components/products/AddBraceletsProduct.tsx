@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Modal from "react-bootstrap/Modal";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useCreateProductMutation } from "../../store/api/productApi";
+import { useCreateBraceletProductMutation } from "../../store/api/productApi";
 import {
   useGetSettingConfigurationsQuery,
   useGetShankConfigurationsQuery,
@@ -11,6 +11,13 @@ import {
   useGetStylesQuery,
   useGetSettingFeaturesQuery,
   useGetMotifThemesQuery,
+  useGetFlexibilityTypesQuery,
+  useGetProductSpecialsQuery,
+  useGetCollectionsQuery,
+  useGetChainLinkTypesQuery,
+  useGetClosureTypesQuery,
+  useGetStoneSettingsQuery,
+  useGetPlacementFitsQuery,
 } from "../../store/api/productAttributesApi";
 import { useGetSubSubCategoriesQuery } from "../../store/api/subSubCategoryApi";
 import { toast } from "sonner";
@@ -27,6 +34,7 @@ type VariantRow = {
   stone_type: string;
   carat_weight: string;
   gold_type: string;
+  diamond_quality: string;
   price: string;             // original price
   discounted_price: string;  // discount price
 };
@@ -61,7 +69,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   const [metalViewAngles, setMetalViewAngles] = useState<Record<string, string[]>>({});
 
   // Diamond fields
-  const [diamondOrigins, setDiamondOrigins] = useState<string[]>([]);
+  const [diamondOrigin, setDiamondOrigin] = useState<string>("");
   const [diamondGrading, setDiamondGrading] = useState<"single" | "double">("single");
   const [diamondQualities, setDiamondQualities] = useState<string[]>([]);
   const [diamondDropdownOpen, setDiamondDropdownOpen] = useState(false);
@@ -119,6 +127,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   const [isProductDetailsAccordionOpen, setIsProductDetailsAccordionOpen] = useState<boolean>(false);
 
   // Center Stone Details Fields
+  const [hasCenterStone, setHasCenterStone] = useState<boolean>(false);
   const [isCenterStoneAccordionOpen, setIsCenterStoneAccordionOpen] = useState<boolean>(false);
   const [centerStoneCertified, setCenterStoneCertified] = useState<string>("No");
   const [centerStoneShape, setCenterStoneShape] = useState<string>("");
@@ -181,7 +190,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   const bandFitsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Loading state
-  const [createProduct, { isLoading }] = useCreateProductMutation();
+  const [createBraceletProduct, { isLoading }] = useCreateBraceletProductMutation();
 
   // Fetch product attributes
   const { data: settingConfigurationsData } = useGetSettingConfigurationsQuery();
@@ -192,6 +201,13 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   const { data: stylesData } = useGetStylesQuery();
   const { data: settingFeaturesData } = useGetSettingFeaturesQuery();
   const { data: motifThemesData } = useGetMotifThemesQuery();
+  const { data: flexibilityTypesData } = useGetFlexibilityTypesQuery();
+  const { data: productSpecialsData } = useGetProductSpecialsQuery();
+  const { data: collectionsData } = useGetCollectionsQuery();
+  const { data: chainLinkTypesData } = useGetChainLinkTypesQuery();
+  const { data: closureTypesData } = useGetClosureTypesQuery();
+  const { data: stoneSettingsData } = useGetStoneSettingsQuery();
+  const { data: placementFitsData } = useGetPlacementFitsQuery();
 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const subCategoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -206,32 +222,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   // Note: The API might need to support multiple subCategoryIds, but for now we fetch all and filter
   const { data: subSubCategoriesResponse } = useGetSubSubCategoriesQuery();
   const allSubSubCategories = (subSubCategoriesResponse?.data as any[]) || [];
-
-  // Filter subcategories based on selected category
-  const filteredSubCategories = useMemo(() => {
-    if (!selectedCategory) {
-      return [];
-    }
-    return subCategories.filter((subCat) => {
-      const categoryId = typeof subCat?.categoryId === 'object'
-        ? subCat?.categoryId?._id
-        : subCat?.categoryId;
-      return categoryId === selectedCategory;
-    });
-  }, [subCategories, selectedCategory]);
-
-  // Filter subSubCategories based on selected subCategories
-  const filteredSubSubCategories = useMemo(() => {
-    if (selectedSubCategories.length === 0) {
-      return [];
-    }
-    return allSubSubCategories.filter((subSubCat) => {
-      const subCategoryId = typeof subSubCat?.subCategoryId === 'object'
-        ? subSubCat?.subCategoryId?._id
-        : subSubCat?.subCategoryId;
-      return selectedSubCategories.includes(subCategoryId);
-    });
-  }, [allSubSubCategories, selectedSubCategories]);
 
   // Get category/subcategory display names
   const getCategoryName = (category: any) => {
@@ -261,14 +251,48 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     return subSubCategory._id || subSubCategory.id || subSubCategory.value || '';
   };
 
+  // Filter categories to only show "Bracelets"
+  const filteredCategories = useMemo(() => {
+    return categories.filter((cat) => {
+      const categoryName = getCategoryName(cat);
+      return categoryName === "Bracelets";
+    });
+  }, [categories]);
+
+  // Filter subcategories based on selected category
+  const filteredSubCategories = useMemo(() => {
+    if (!selectedCategory) {
+      return [];
+    }
+    return subCategories.filter((subCat) => {
+      const categoryId = typeof subCat?.categoryId === 'object'
+        ? subCat?.categoryId?._id
+        : subCat?.categoryId;
+      return categoryId === selectedCategory;
+    });
+  }, [subCategories, selectedCategory]);
+
+  // Filter subSubCategories based on selected subCategories
+  const filteredSubSubCategories = useMemo(() => {
+    if (selectedSubCategories.length === 0) {
+      return [];
+    }
+    return allSubSubCategories.filter((subSubCat) => {
+      const subCategoryId = typeof subSubCat?.subCategoryId === 'object'
+        ? subSubCat?.subCategoryId?._id
+        : subSubCat?.subCategoryId;
+      return selectedSubCategories.includes(subCategoryId);
+    });
+  }, [allSubSubCategories, selectedSubCategories]);
+
   // Check if selected category is one that doesn't need subcategory/sub-subcategory
   const shouldDisableSubCategories = useMemo(() => {
     if (!selectedCategory) return false;
-    const selectedCat = categories.find((cat) => getCategoryId(cat) === selectedCategory);
+    const selectedCat = filteredCategories.find((cat) => getCategoryId(cat) === selectedCategory);
     if (!selectedCat) return false;
     const categoryName = getCategoryName(selectedCat);
     return categoryName === "Engagement Rings" || categoryName === "Wedding Bands & Anniversary Bands";
-  }, [selectedCategory, categories]);
+  }, [selectedCategory, filteredCategories]);
 
   const diamondOriginStatic = [
     { id: 1, label: "Natural", value: "natural" },
@@ -282,39 +306,14 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     { id: 4, label: "Fair", value: "fair" },
   ];
 
-  const flexibilityTypeStatic = [
-    { id: 1, label: "Flexible", value: "flexible" },
-    { id: 2, label: "Semi-Flexible", value: "semi-flexible" },
-    { id: 3, label: "Rigid", value: "rigid" },
-    { id: 4, label: "Adjustable", value: "adjustable" },
-  ];
-
-  const chainLinkTypeStatic = [
-    { id: 1, label: "Curb Link", value: "curb-link" },
-    { id: 2, label: "Box Link", value: "box-link" },
-    { id: 3, label: "Rope Link", value: "rope-link" },
-    { id: 4, label: "Figaro Link", value: "figaro-link" },
-    { id: 5, label: "Snake Link", value: "snake-link" },
-    { id: 6, label: "Cable Link", value: "cable-link" },
-  ];
-
-  const closureTypeStatic = [
-    { id: 1, label: "Lobster Clasp", value: "lobster-clasp" },
-    { id: 2, label: "Spring Ring", value: "spring-ring" },
-    { id: 3, label: "Toggle", value: "toggle" },
-    { id: 4, label: "Magnetic", value: "magnetic" },
-    { id: 5, label: "Box Clasp", value: "box-clasp" },
-    { id: 6, label: "Hook and Eye", value: "hook-and-eye" },
-  ];
-
-  const stoneSettingStatic = [
-    { id: 1, label: "Prong Setting", value: "prong-setting" },
-    { id: 2, label: "Bezel Setting", value: "bezel-setting" },
-    { id: 3, label: "Channel Setting", value: "channel-setting" },
-    { id: 4, label: "Pave Setting", value: "pave-setting" },
-    { id: 5, label: "Tension Setting", value: "tension-setting" },
-    { id: 6, label: "Invisible Setting", value: "invisible-setting" },
-  ];
+  // Dynamic data from API
+  const flexibilityTypes = (flexibilityTypesData?.data as any[]) || [];
+  const productSpecialsList = (productSpecialsData?.data as any[]) || [];
+  const collectionsList = (collectionsData?.data as any[]) || [];
+  const chainLinkTypes = (chainLinkTypesData?.data as any[]) || [];
+  const closureTypes = (closureTypesData?.data as any[]) || [];
+  const stoneSettings = (stoneSettingsData?.data as any[]) || [];
+  const placementFits = (placementFitsData?.data as any[]) || [];
 
   const finishDetailStatic = [
     { id: 1, label: "Polished", value: "polished" },
@@ -325,13 +324,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     { id: 6, label: "Textured", value: "textured" },
   ];
 
-  const placementFitStatic = [
-    { id: 1, label: "Comfort Fit", value: "comfort-fit" },
-    { id: 2, label: "Standard Fit", value: "standard-fit" },
-    { id: 3, label: "Tight Fit", value: "tight-fit" },
-    { id: 4, label: "Loose Fit", value: "loose-fit" },
-    { id: 5, label: "Adjustable Fit", value: "adjustable-fit" },
-  ];
 
   const sizeScaleStatic = [
     { id: 1, label: "US", value: "us" },
@@ -366,13 +358,16 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   ];
 
   const viewAngleOptions = [
-    { id: 1, label: "Angled view", value: "Angled view" },
-    { id: 2, label: "Top view", value: "Top view" },
-    { id: 3, label: "Side view", value: "Side view" },
-    { id: 4, label: "Images 1", value: "Image 1" },
-    { id: 5, label: "Images 2", value: "Image 2" },
-    { id: 6, label: "Images 3", value: "Image 3" },
+    { id: 1, label: "Angled view", value: "Angled view", required: true },
+    { id: 2, label: "Top view", value: "Top view", required: true },
+    { id: 3, label: "Side view", value: "Side view", required: true },
+    { id: 4, label: "Images 1", value: "Image 1", required: false },
+    { id: 5, label: "Images 2", value: "Image 2", required: false },
+    { id: 6, label: "Images 3", value: "Image 3", required: false },
   ];
+
+  const requiredViewAngles = viewAngleOptions.filter(a => a.required).map(a => a.value);
+  const optionalViewAngles = viewAngleOptions.filter(a => !a.required).map(a => a.value);
 
   // Handle video file selection
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -435,13 +430,10 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     );
   };
 
-  // Toggle diamond origin
-  const toggleDiamondOrigin = (origin: { value: string }) => {
-    setDiamondOrigins((prev) =>
-      prev.includes(origin.value)
-        ? prev.filter((o) => o !== origin.value)
-        : [...prev, origin.value]
-    );
+  // Select diamond origin (single select)
+  const selectDiamondOrigin = (origin: { value: string }) => {
+    setDiamondOrigin(origin.value);
+    setDiamondDropdownOpen(false);
   };
 
   // Toggle diamond quality
@@ -489,17 +481,38 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
         });
         return prev.filter((t) => t !== type);
       } else {
-        // Add metal type with all 3 view angles required
-        const allViewAngles = viewAngleOptions.map(a => a.value);
+        // Add metal type with only required view angles (Angled view, Top view, Side view)
         setMetalImages((imgPrev) => ({
           ...imgPrev,
           [type]: {}
         }));
         setMetalViewAngles((anglePrev) => ({
           ...anglePrev,
-          [type]: allViewAngles
+          [type]: [...requiredViewAngles]
         }));
         return [...prev, type];
+      }
+    });
+  };
+
+  // Toggle optional view angle for a metal type
+  const toggleOptionalViewAngle = (metalType: string, viewAngle: string) => {
+    setMetalViewAngles((prev) => {
+      const currentAngles = prev[metalType] || [];
+      if (currentAngles.includes(viewAngle)) {
+        // Remove optional angle
+        const updated = currentAngles.filter(a => a !== viewAngle);
+        setMetalImages((imgPrev) => {
+          const newImages = { ...imgPrev };
+          if (newImages[metalType]) {
+            delete newImages[metalType][viewAngle];
+          }
+          return newImages;
+        });
+        return { ...prev, [metalType]: updated };
+      } else {
+        // Add optional angle
+        return { ...prev, [metalType]: [...currentAngles, viewAngle] };
       }
     });
   };
@@ -766,7 +779,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     setMetalTypes([]);
     setMetalImages({});
     setMetalViewAngles({});
-    setDiamondOrigins([]);
+    setDiamondOrigin("");
     setDiamondQualities([]);
     setCaratWeights([]);
     setStones([]);
@@ -810,6 +823,9 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     setCenterStoneQualityType("");
     setHasSideStone(false);
     setCaratMinWeights({});
+    // Reset Center Stone
+    setHasCenterStone(false);
+    setIsCenterStoneAccordionOpen(false);
     // Reset Stone Details Form
     setHasStoneDetailsForm(false);
     setIsStoneDetailsFormAccordionOpen(false);
@@ -863,18 +879,20 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       toast.error("Please select Band Profile Shapes");
       return;
     }
-    if (!bandWidthCategories) {
-      toast.error("Please select Band Width Categories");
-      return;
-    }
+    // Band Width Categories is not required for bracelets (field is commented out)
+    // if (!bandWidthCategories) {
+    //   toast.error("Please select Band Width Categories");
+    //   return;
+    // }
     if (bandFits.length === 0) {
       toast.error("Please select at least one Stone Setting");
       return;
     }
-    if (shankTreatments.length === 0) {
-      toast.error("Please select at least one Shank Treatment");
-      return;
-    }
+    // shankTreatments is not required for bracelets
+    // if (shankTreatments.length === 0) {
+    //   toast.error("Please select at least one Shank Treatment");
+    //   return;
+    // }
     if (styles.length === 0) {
       toast.error("Please select at least one Style");
       return;
@@ -894,7 +912,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
 
     // Validate metal images - mandatory view angles must have images for each metal type
     if (metalTypes.length > 0) {
-      const mandatoryAngles = ["Angled view", "Top view", "Side view"];
+      const mandatoryAngles = requiredViewAngles;
       for (const metalType of metalTypes) {
         for (const viewAngle of mandatoryAngles) {
           if (!metalImages[metalType]?.[viewAngle]) {
@@ -940,7 +958,9 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       });
 
       // Diamond fields
-      diamondOrigins.forEach((origin) => formData.append("diamond_origin", origin));
+      if (diamondOrigin) {
+        formData.append("diamond_origin", diamondOrigin);
+      }
       diamondQualities.forEach((quality) => formData.append("diamond_quality", quality));
       caratWeights.forEach((weight) => formData.append("carat_weight", weight));
 
@@ -1048,6 +1068,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
             diamond_type: v.stone_type,
             carat_weight: v.carat_weight,
             metal_type: v.gold_type,
+            diamond_quality: v.diamond_quality,
             price: Number(v.price),
             discounted_price: Number(v.discounted_price),
           }));
@@ -1090,14 +1111,15 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       }
 
       // Multi-select dropdown fields (array of ObjectIds)
-      shankTreatments.forEach((id) => formData.append("shankTreatments", id));
+      // shankTreatments is not needed for bracelets - removed
+      // shankTreatments.forEach((id) => formData.append("shankTreatments", id));
       styles.forEach((id) => formData.append("styles", id));
       settingFeatures.forEach((id) => formData.append("settingFeatures", id));
       motifThemes.forEach((id) => formData.append("motifThemes", id));
       ornamentDetails.forEach((id) => formData.append("ornamentDetails", id));
 
-      await createProduct(formData).unwrap();
-      toast.success("Product created successfully!");
+      await createBraceletProduct(formData).unwrap();
+      toast.success("Bracelet product created successfully!");
       resetForm();
       handleClose();
       if (onSuccess) onSuccess();
@@ -1107,10 +1129,10 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     }
   };
 
-  // Generate all combinations of Stone (diamondOrigins) × Carat × Gold (metalTypes)
+  // Generate all combinations of Stone (diamondOrigin) × Carat × Gold (metalTypes) × Diamond Quality
   const handleGenerateVariants = () => {
-    if (diamondOrigins.length === 0) {
-      toast.error("Please select at least one Stone Type (Diamond Origin)");
+    if (!diamondOrigin) {
+      toast.error("Please select a Stone Type (Diamond Origin)");
       return;
     }
     if (caratWeights.length === 0) {
@@ -1121,16 +1143,21 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       toast.error("Please select at least one Gold Type (Metal Type)");
       return;
     }
+    if (diamondQualities.length === 0) {
+      toast.error("Please select at least one Diamond Quality");
+      return;
+    }
 
     const rows: VariantRow[] = [];
 
-    diamondOrigins.forEach(stone => {
-      caratWeights.forEach(carat => {
-        metalTypes.forEach(gold => {
+    caratWeights.forEach(carat => {
+      metalTypes.forEach(gold => {
+        diamondQualities.forEach(quality => {
           rows.push({
-            stone_type: stone,
+            stone_type: diamondOrigin,
             carat_weight: `${carat}ct`,
             gold_type: gold,
+            diamond_quality: quality,
             price: "",
             discounted_price: "",
           });
@@ -1227,7 +1254,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                 required
               />
             </div> */}
-            <div className="mb-3">
+            {/* <div className="mb-3">
               <label className="form-label text-black">Discount Label</label>
               <input
                 type="text"
@@ -1236,7 +1263,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                 value={discountLabel}
                 onChange={(e) => setDiscountLabel(e.target.value)}
               />
-            </div>
+            </div> */}
             {/* Single-Select Dropdown for Category */}
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={categoryDropdownRef}>
@@ -1249,7 +1276,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                     <span>
                       {selectedCategory
                         ? (() => {
-                          const selectedCat = categories.find((cat) => getCategoryId(cat) === selectedCategory);
+                          const selectedCat = filteredCategories.find((cat) => getCategoryId(cat) === selectedCategory);
                           return selectedCat ? getCategoryName(selectedCat) : "Select...";
                         })()
                         : "Select..."}
@@ -1258,8 +1285,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                   </div>
                   {categoryDropdownOpen && (
                     <div className="dropdown-list">
-                      {categories.length > 0 ? (
-                        categories.map((category) => {
+                      {filteredCategories.length > 0 ? (
+                        filteredCategories.map((category) => {
                           const categoryId = getCategoryId(category);
                           const categoryName = getCategoryName(category);
                           return (
@@ -1530,11 +1557,12 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                   <div key={metalType} className="mb-4 p-3 border rounded">
                     <h6 className="text-black mb-3">{metalType}</h6>
 
-                    {/* View Angle Selection - All 3 Required */}
+                    {/* View Angle Selection - Required and Optional */}
                     <div className="mb-3">
-                      <label className="form-label text-black">View Angles <span className="text-danger">*</span></label>
-                      <div className="w-100">
-                        {viewAngleOptions.map((angle) => (
+                      <label className="form-label text-black">View Angles</label>
+                      <div className="w-100 mb-2">
+                        <small className="text-muted d-block mb-2">Required <span className="text-danger">*</span></small>
+                        {viewAngleOptions.filter(a => a.required).map((angle) => (
                           <div className="form-check form-check-inline" key={angle.id}>
                             <input
                               className="form-check-input"
@@ -1545,44 +1573,68 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                               readOnly
                             />
                             <label className="form-check-label text-black" htmlFor={`${metalType}-${angle.value}`}>
+                              {angle.label} <span className="text-danger">*</span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="w-100">
+                        <small className="text-muted d-block mb-2">Optional</small>
+                        {viewAngleOptions.filter(a => !a.required).map((angle) => (
+                          <div className="form-check form-check-inline" key={angle.id}>
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`${metalType}-${angle.value}`}
+                              checked={(metalViewAngles[metalType] || []).includes(angle.value)}
+                              onChange={() => toggleOptionalViewAngle(metalType, angle.value)}
+                            />
+                            <label className="form-check-label text-black" htmlFor={`${metalType}-${angle.value}`}>
                               {angle.label}
                             </label>
                           </div>
                         ))}
                       </div>
-                      <small className="text-muted">All view angles are required</small>
+                      <small className="text-muted d-block mt-2">Angled view, Top view, and Side view are required. Images 1, 2, 3 are optional.</small>
                     </div>
 
-                    {/* Image Upload for each View Angle - Single Image Required */}
+                    {/* Image Upload for each Selected View Angle */}
                     <div className="mb-3">
-                      <label className="form-label text-black">Upload Images <span className="text-danger">*</span></label>
-                      {viewAngleOptions.map((angle) => (
-                        <div key={angle.id} className="mb-3 p-2 bg-light rounded">
-                          <label className="form-label text-black fw-semibold">{angle.label} <span className="text-danger">*</span></label>
-                          <input
-                            type="file"
-                            className="form-control mb-2"
-                            accept="image/*"
-                            data-metal={metalType}
-                            data-angle={angle.value}
-                            onChange={(e) => handleMetalImageUpload(metalType, angle.value, e)}
-                          />
-                          <div className="image-preview">
-                            {metalImages[metalType]?.[angle.value] && (
-                              <div className="image-box">
-                                <img src={URL.createObjectURL(metalImages[metalType][angle.value])} alt={`${metalType} ${angle.value}`} />
-                                <button
-                                  type="button"
-                                  className="remove-btn"
-                                  onClick={() => removeMetalImage(metalType, angle.value)}
-                                >
-                                  ✖
-                                </button>
-                              </div>
-                            )}
+                      <label className="form-label text-black">Upload Images</label>
+                      {(metalViewAngles[metalType] || []).map((viewAngle) => {
+                        const angleOption = viewAngleOptions.find(a => a.value === viewAngle);
+                        if (!angleOption) return null;
+                        return (
+                          <div key={viewAngle} className="mb-3 p-2 bg-light rounded">
+                            <label className="form-label text-black fw-semibold">
+                              {angleOption.label} 
+                              {angleOption.required && <span className="text-danger"> *</span>}
+                            </label>
+                            <input
+                              type="file"
+                              className="form-control mb-2"
+                              accept="image/*"
+                              data-metal={metalType}
+                              data-angle={viewAngle}
+                              onChange={(e) => handleMetalImageUpload(metalType, viewAngle, e)}
+                            />
+                            <div className="image-preview">
+                              {metalImages[metalType]?.[viewAngle] && (
+                                <div className="image-box">
+                                  <img src={URL.createObjectURL(metalImages[metalType][viewAngle])} alt={`${metalType} ${viewAngle}`} />
+                                  <button
+                                    type="button"
+                                    className="remove-btn"
+                                    onClick={() => removeMetalImage(metalType, viewAngle)}
+                                  >
+                                    ✖
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -1597,8 +1649,11 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                     onClick={() => setDiamondDropdownOpen(!diamondDropdownOpen)}
                   >
                     <span>
-                      {diamondOrigins.length
-                        ? `Selected: ${diamondOrigins.join(", ")}`
+                      {diamondOrigin
+                        ? (() => {
+                          const selected = diamondOriginStatic.find((o) => o.value === diamondOrigin);
+                          return selected ? selected.label : "Select...";
+                        })()
                         : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
@@ -1608,12 +1663,13 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                       {diamondOriginStatic.map((origin) => (
                         <label className="dropdown-item" key={origin.id}>
                           <input
-                            type="checkbox"
+                            type="radio"
+                            name="diamondOrigin"
                             value={origin.value}
-                            checked={diamondOrigins.includes(origin.value)}
+                            checked={diamondOrigin === origin.value}
                             onChange={(e) => {
                               e.stopPropagation();
-                              toggleDiamondOrigin(origin);
+                              selectDiamondOrigin(origin);
                             }}
                           />
                           {origin.label}
@@ -1710,19 +1766,19 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
             <div className="mb-3">
               <label className="form-label text-black">Flexibility Type *</label>
               <div>
-                {flexibilityTypeStatic.map((item) => (
-                  <div className="form-check form-check-inline" key={item.id}>
+                {flexibilityTypes.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
                     <input
                       className="form-check-input"
                       type="radio"
                       name="settingConfigurations"
-                      id={`flexibilityType-${item.id}`}
-                      value={item.value}
-                      checked={settingConfigurations === item.value}
+                      id={`flexibilityType-${item._id}`}
+                      value={item._id}
+                      checked={settingConfigurations === item._id}
                       onChange={(e) => setSettingConfigurations(e.target.value)}
                     />
-                    <label className="form-check-label text-black" htmlFor={`flexibilityType-${item.id}`}>
-                      {item.label}
+                    <label className="form-check-label text-black" htmlFor={`flexibilityType-${item._id}`}>
+                      {item.displayName}
                     </label>
                   </div>
                 ))}
@@ -1734,8 +1790,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
               <div className="w-100" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 {caratWeightOptions.map((weight, index) => {
                   const isSelected = caratWeights.includes(weight);
-                  const selectedFlexibility = flexibilityTypeStatic.find(item => item.value === settingConfigurations);
-                  const isTrilogyOrToiEtMoi = selectedFlexibility?.label === "Trilogy Setting" || selectedFlexibility?.label === "Toi Et Moi Setting";
+                  const selectedFlexibility = flexibilityTypes.find(item => item.code === settingConfigurations);
+                  const isTrilogyOrToiEtMoi = selectedFlexibility?.displayName === "Trilogy Setting" || selectedFlexibility?.displayName === "Toi Et Moi Setting";
 
                   return (
                     <div className="d-flex flex-column gap-1" key={index} style={{ width: 'calc(25% - 8px)', minWidth: '150px', marginBottom: '10px' }}>
@@ -1865,115 +1921,44 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
             <div className="mb-3">
               <label className="form-label text-black">Product Specials</label>
               <div>
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="productSpecials"
-                    id="productSpecialsNewIn"
-                    value="New In"
-                    checked={productSpecials === "New In"}
-                    onChange={(e) => setProductSpecials(e.target.value)}
-                  />
-                  <label className="form-check-label text-black" htmlFor="productSpecialsNewIn">
-                    New In
-                  </label>
-                </div>
-
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="productSpecials"
-                    id="productSpecialsBestsellers"
-                    value="Bestsellers"
-                    checked={productSpecials === "Bestsellers"}
-                    onChange={(e) => setProductSpecials(e.target.value)}
-                  />
-                  <label className="form-check-label text-black" htmlFor="productSpecialsBestsellers">
-                    Bestsellers
-                  </label>
-                </div>
-
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="productSpecials"
-                    id="productSpecialsFeatured"
-                    value="Featured"
-                    checked={productSpecials === "Featured"}
-                    onChange={(e) => setProductSpecials(e.target.value)}
-                  />
-                  <label className="form-check-label text-black" htmlFor="productSpecialsFeatured">
-                    Featured
-                  </label>
-                </div>
-
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="productSpecials"
-                    id="productSpecialsTrending"
-                    value="Trending"
-                    checked={productSpecials === "Trending"}
-                    onChange={(e) => setProductSpecials(e.target.value)}
-                  />
-                  <label className="form-check-label text-black" htmlFor="productSpecialsTrending">
-                    Trending
-                  </label>
-                </div>
+                {productSpecialsList.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="productSpecials"
+                      id={`productSpecials-${item._id}`}
+                      value={item.code}
+                      checked={productSpecials === item.code}
+                      onChange={(e) => setProductSpecials(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`productSpecials-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="mb-3">
               <label className="form-label text-black">Collections</label>
               <div>
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="collections"
-                    id="collectionsCartier"
-                    value="Cartier"
-                    checked={collections === "Cartier"}
-                    onChange={(e) => setCollections(e.target.value)}
-                  />
-                  <label className="form-check-label text-black" htmlFor="collectionsCartier">
-                    Cartier
-                  </label>
-                </div>
-
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="collections"
-                    id="collectionsVersace"
-                    value="Versace"
-                    checked={collections === "Versace"}
-                    onChange={(e) => setCollections(e.target.value)}
-                  />
-                  <label className="form-check-label text-black" htmlFor="collectionsVersace">
-                    Versace
-                  </label>
-                </div>
-
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="collections"
-                    id="collectionsCK"
-                    value="CK"
-                    checked={collections === "CK"}
-                    onChange={(e) => setCollections(e.target.value)}
-                  />
-                  <label className="form-check-label text-black" htmlFor="collectionsCK">
-                    CK
-                  </label>
-                </div>
+                {collectionsList.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="collections"
+                      id={`collections-${item._id}`}
+                      value={item.code}
+                      checked={collections === item.code}
+                      onChange={(e) => setCollections(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`collections-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -2096,19 +2081,19 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
             <div className="mb-3">
               <label className="form-label text-black">Chain Link Type *</label>
               <div>
-                {chainLinkTypeStatic.map((item) => (
-                  <div className="form-check form-check-inline" key={item.id}>
+                {chainLinkTypes.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
                     <input
                       className="form-check-input"
                       type="radio"
                       name="shankConfigurations"
-                      id={`chainLinkType-${item.id}`}
-                      value={item.value}
-                      checked={shankConfigurations === item.value}
+                      id={`chainLinkType-${item._id}`}
+                      value={item._id}
+                      checked={shankConfigurations === item._id}
                       onChange={(e) => setShankConfigurations(e.target.value)}
                     />
-                    <label className="form-check-label text-black" htmlFor={`chainLinkType-${item.id}`}>
-                      {item.label}
+                    <label className="form-check-label text-black" htmlFor={`chainLinkType-${item._id}`}>
+                      {item.displayName}
                     </label>
                   </div>
                 ))}
@@ -2197,19 +2182,19 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
             <div className="mb-3">
               <label className="form-label text-black">Lock (ClosureType linked) *</label>
               <div>
-                {closureTypeStatic.map((item) => (
-                  <div className="form-check form-check-inline" key={item.id}>
+                {closureTypes.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
                     <input
                       className="form-check-input"
                       type="radio"
                       name="bandProfileShapes"
-                      id={`closureType-${item.id}`}
-                      value={item.value}
-                      checked={bandProfileShapes === item.value}
+                      id={`closureType-${item._id}`}
+                      value={item._id}
+                      checked={bandProfileShapes === item._id}
                       onChange={(e) => setBandProfileShapes(e.target.value)}
                     />
-                    <label className="form-check-label text-black" htmlFor={`closureType-${item.id}`}>
-                      {item.label}
+                    <label className="form-check-label text-black" htmlFor={`closureType-${item._id}`}>
+                      {item.displayName}
                     </label>
                   </div>
                 ))}
@@ -2255,18 +2240,18 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                   </div>
                   {bandFitsDropdownOpen && (
                     <div className="dropdown-list">
-                      {stoneSettingStatic.map((item) => (
-                        <label className="dropdown-item" key={item.id}>
+                      {stoneSettings.map((item) => (
+                        <label className="dropdown-item" key={item._id}>
                           <input
                             type="checkbox"
-                            value={item.value}
-                            checked={bandFits.includes(item.value)}
+                            value={item._id}
+                            checked={bandFits.includes(item._id)}
                             onChange={(e) => {
                               e.stopPropagation();
-                              toggleBandFit(item.value);
+                              toggleBandFit(item._id);
                             }}
                           />
-                          {item.label}
+                          {item.displayName}
                         </label>
                       ))}
                     </div>
@@ -2437,18 +2422,18 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                   </div>
                   {ornamentDetailsDropdownOpen && (
                     <div className="dropdown-list">
-                      {placementFitStatic.map((item) => (
-                        <label className="dropdown-item" key={item.id}>
+                      {placementFits.map((item) => (
+                        <label className="dropdown-item" key={item._id}>
                           <input
                             type="checkbox"
-                            value={item.value}
-                            checked={ornamentDetails.includes(item.value)}
+                            value={item._id}
+                            checked={ornamentDetails.includes(item._id)}
                             onChange={(e) => {
                               e.stopPropagation();
-                              toggleOrnamentDetail(item.value);
+                              toggleOrnamentDetail(item._id);
                             }}
                           />
-                          {item.label}
+                          {item.displayName}
                         </label>
                       ))}
                     </div>
@@ -2605,21 +2590,54 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                 </div>
               )}
             </div>
-            <div className="mb-3 border rounded p-3">
-              <div
-                className="d-flex justify-content-between align-items-center cursor-pointer"
-                onClick={() => setIsCenterStoneAccordionOpen(!isCenterStoneAccordionOpen)}
-                style={{ cursor: 'pointer' }}
-              >
-                <h5 className="text-black mb-0">Center Stone Details Configuration</h5>
-                <i className={`fas fa-chevron-${isCenterStoneAccordionOpen ? 'up' : 'down'}`}></i>
+            <div className={`mb-3 border rounded p-3 ${!hasCenterStone ? 'bg-light' : ''}`}>
+              <div className="d-flex justify-content-between align-items-center">
+                {/* Left side: Title + Accordion Toggle */}
+                <div
+                  className="d-flex justify-content-between align-items-center w-100 me-3"
+                  onClick={() => {
+                    if (!hasCenterStone) return; // prevent open/close when toggle is OFF
+                    setIsCenterStoneAccordionOpen(!isCenterStoneAccordionOpen);
+                  }}
+                  style={{ cursor: hasCenterStone ? "pointer" : "not-allowed" }}
+                >
+                  <h5 className="text-black mb-0">Center Stone Details Configuration</h5>
+
+                  {/* Chevron only visible when toggle is ON */}
+                  {hasCenterStone && (
+                    <i className={`fas fa-chevron-${isCenterStoneAccordionOpen ? "up" : "down"}`}></i>
+                  )}
+                </div>
+
+                {/* Right side: Switch Toggle */}
+                <div className="form-check form-switch m-0">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="centerStoneToggle"
+                    checked={hasCenterStone}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setHasCenterStone(checked);
+
+                      if (!checked) {
+                        setIsCenterStoneAccordionOpen(false);
+                      } else {
+                        setIsCenterStoneAccordionOpen(true);
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
-              {isCenterStoneAccordionOpen && (
+              {/* Show section only if toggle ON AND accordion open */}
+              {hasCenterStone && isCenterStoneAccordionOpen && (
                 <div className="mt-3">
-                  {/* 1. Add Stone - Reusing existing stone fields */}
+                  {/* 1. Add Stone - Synced with main Stone section (read-only) */}
                   <div className="mb-3">
                     <label className="form-label text-black">Stone</label>
+                    <small className="text-muted d-block mb-2">(Select stones from the main Stone section above)</small>
                     <div className="w-100 half-divide">
                       <div className="form-check w-50">
                         <input
@@ -2627,7 +2645,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           type="checkbox"
                           id="cs-stone-diamond"
                           checked={stones.includes("Diamond")}
-                          onChange={() => toggleStone("Diamond")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-diamond">
                           Diamond
@@ -2639,7 +2658,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           type="checkbox"
                           id="cs-stone-color-diamond"
                           checked={stones.includes("Color Diamond")}
-                          onChange={() => toggleStone("Color Diamond")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-color-diamond">
                           Color Diamond
@@ -2653,37 +2673,160 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           type="checkbox"
                           id="cs-stone-gemstone"
                           checked={stones.includes("Gemstone")}
-                          onChange={() => toggleStone("Gemstone")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-gemstone">
                           Gemstone
                         </label>
                       </div>
-
                     </div>
-                  </div>
 
-                  {/* 2. Diamond Origin - Reusing existing fields */}
-                  {/* <div className="mb-3">
-                    <label className="form-label text-black">Diamond Origin</label>
-                    <div className="w-100">
-                      {diamondOriginStatic.map((origin) => (
-                        <div className="form-check form-check-inline" key={`cs-origin-${origin.id}`}>
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`cs-origin-${origin.value}`}
-                            value={origin.value}
-                            checked={diamondOrigins.includes(origin.value)}
-                            onChange={() => toggleDiamondOrigin(origin)}
-                          />
-                          <label className="form-check-label text-black" htmlFor={`cs-origin-${origin.value}`}>
-                            {origin.label}
-                          </label>
+                    {stones.map((stone) => (
+                      <div key={stone} className="mb-4 p-3 border rounded bg-white shadow-sm">
+                        <h6 className="text-black fw-bold mb-3 d-flex align-items-center">
+                          <span className="badge bg-primary me-2">{stone}</span> Details
+                        </h6>
+
+                        {/* Diamond Origin - Hidden if stone is Gemstone */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Diamond Origin</label>
+                          <div className="w-100">
+                            {diamondOriginStatic.map((origin) => (
+                              <div className="form-check form-check-inline" key={`ss-${stone}-origin-${origin.id}`}>
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`ss-${stone.replace(/\s+/g, "_")}-origin-${origin.value}`}
+                                  value={origin.value}
+                                  checked={(sideStonesData[stone]?.origins || []).includes(origin.value)}
+                                  onChange={() => toggleSideStoneOrigin(stone, origin.value)}
+                                />
+                                <label
+                                  className="form-check-label text-black"
+                                  htmlFor={`ss-${stone.replace(/\s+/g, "_")}-origin-${origin.value}`}
+                                >
+                                  {origin.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div> */}
+
+                        <div className="mb-3">
+                          <label className="form-label text-black">
+                            {stone === "Gemstone" ? "Shape" : "Diamond Shape"}
+                          </label>
+
+                          <div className="d-flex flex-wrap gap-2">
+                            {diamondShapeStatic.map((shape) => {
+                              const selectedShapes = sideStonesData[stone]?.shapes || [];
+
+                              return (
+                                <div className="form-check form-check-inline" key={shape}>
+                                  <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    name={`ss-${stone.replace(/\s+/g, "_")}-shapes`}
+                                    id={`ss-${stone.replace(/\s+/g, "_")}-shape-${shape}`}
+                                    value={shape}
+                                    checked={selectedShapes.includes(shape)}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+
+                                      const updatedShapes = selectedShapes.includes(value)
+                                        ? selectedShapes.filter((s) => s !== value)
+                                        : [...selectedShapes, value];
+
+                                      updateSideStoneData(stone, "shapes", updatedShapes);
+                                    }}
+                                  />
+                                  <label
+                                    className="form-check-label text-black"
+                                    htmlFor={`ss-${stone.replace(/\s+/g, "_")}-shape-${shape}`}
+                                  >
+                                    {shape}
+                                  </label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {stone === "Gemstone" ? (
+                          <>
+                            <div className="mb-3">
+                              <label className="form-label text-black">Dimensions</label>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Enter Dimensions"
+                                value={sideStonesData[stone]?.dimensions || ""}
+                                onChange={(e) => updateSideStoneData(stone, "dimensions", e.target.value)}
+                              />
+                            </div>
+                            <div className="mb-3">
+                              <label className="form-label text-black">Gemstone Type</label>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Enter Gemstone Type"
+                                value={sideStonesData[stone]?.gemstoneType || ""}
+                                onChange={(e) => updateSideStoneData(stone, "gemstoneType", e.target.value)}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="mb-3">
+                            <label className="form-label text-black">Min Diamond Weight</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Enter Min Diamond Weight"
+                              value={sideStonesData[stone]?.minDiamondWeight || ""}
+                              onChange={(e) => updateSideStoneData(stone, "minDiamondWeight", e.target.value)}
+                            />
+                          </div>
+                        )}
+
+                        {/* Quantity */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Quantity</label>
+                          <input
+                            type="number"
+                            className="form-control"
+                            placeholder={`Enter Quantity for ${stone}`}
+                            value={sideStonesData[stone]?.quantity || ""}
+                            onChange={(e) => updateSideStoneData(stone, "quantity", e.target.value)}
+                          />
+                        </div>
+
+                        {/* Average Color */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Average Color</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder={`Enter Average Color for ${stone}`}
+                            value={sideStonesData[stone]?.avgColor || ""}
+                            onChange={(e) => updateSideStoneData(stone, "avgColor", e.target.value)}
+                          />
+                        </div>
+
+                        {/* Average Clarity */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Average Clarity</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder={`Enter Average Clarity for ${stone}`}
+                            value={sideStonesData[stone]?.avgClarity || ""}
+                            onChange={(e) => updateSideStoneData(stone, "avgClarity", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
                   {/* 3. IGI / GIA Certified: Yes / No Radio button */}
                   <div className="mb-3">
@@ -2720,9 +2863,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                     </div>
                   </div>
 
-                  {/* 4. Diamond Shape - Radio button options (checkbox style per request description "Radio button options (checkbox)") */}
-                  {/* Using Radio buttons as selecting a shape is typically single choice, but description had (checkbox) */}
-                  {/* Assuming single selection for shape is best, but using radio input type */}
+                  {/* 4. Diamond Shape */}
                   <div className="mb-3">
                     <label className="form-label text-black">Diamond Shape</label>
                     <div className="d-flex flex-wrap gap-2">
@@ -2745,19 +2886,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                     </div>
                   </div>
 
-                  {/* 5. Minimum Stone Weight - Text Input */}
-                  {/* <div className="mb-3">
-                    <label className="form-label text-black">Minimum Stone Weight</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Enter Minimum Weight"
-                      value={centerStoneMinWeight}
-                      onChange={(e) => setCenterStoneMinWeight(e.target.value)}
-                    />
-                  </div> */}
-
-                  {/* 6. Color - Text Input */}
+                  {/* 6. Color */}
                   <div className="mb-3">
                     <label className="form-label text-black">Color</label>
                     <input
@@ -2768,57 +2897,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                       onChange={(e) => setCenterStoneColor(e.target.value)}
                     />
                   </div>
-
-                  {/* Quality Type Selector */}
-                  {/* <div className="mb-3">
-                    <label className="form-label text-black">Qualitsy Type</label>
-                    <div className="d-flex gap-3">
-                      {["Single Letter", "Double Letter"].map((type) => (
-                        <div
-                          key={type}
-                          className={`border rounded p-2 px-3 cursor-pointer ${centerStoneQualityType === type ? 'bg-primary text-white' : 'bg-light text-black'}`}
-                          onClick={() => {
-                            setCenterStoneQualityType(type);
-                            // Reset dependent fields when type changes
-                            setCenterStoneDiamondQuality("");
-                            setCenterStoneColorQuality("");
-                            setCenterStoneClarity("");
-                          }}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {type}
-                        </div>
-                      ))}
-                    </div>
-                  </div> */}
-
-                  {/* Diamond Quality Selector */}
-                  {/* {centerStoneQualityType && (
-                    <div className="mb-3">
-                      <label className="form-label text-black">Diamond Quality</label>
-                      <div className="d-flex flex-wrap gap-2">
-                        {diamondQualityOptions
-                          .filter(option =>
-                            (centerStoneQualityType === "Single Letter" && option.type === "single") ||
-                            (centerStoneQualityType === "Double Letter" && option.type === "double")
-                          )
-                          .map((option) => (
-                            <div
-                              className={`border rounded p-2 cursor-pointer ${centerStoneDiamondQuality === option.label ? 'bg-secondary text-white' : 'bg-light text-black'}`}
-                              key={option.label}
-                              onClick={() => {
-                                setCenterStoneDiamondQuality(option.label);
-                                setCenterStoneColorQuality(option.color);
-                                setCenterStoneClarity(option.clarity);
-                              }}
-                              style={{ cursor: 'pointer', minWidth: '120px', textAlign: 'center' }}
-                            >
-                              {option.fullLabel}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )} */}
 
                   {/* 7. Color Quality - Read Only */}
                   <div className="mb-3">
@@ -3157,17 +3235,19 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                     />
                   </div>
 
-                  {/* 1. Stone selection */}
+                  {/* 1. Stone selection - Synced with main Stone section (read-only) */}
                   <div className="mb-3">
                     <label className="form-label text-black">Stone</label>
+                    <small className="text-muted d-block mb-2">(Select stones from the main Stone section above)</small>
                     <div className="w-100 half-divide">
                       <div className="form-check w-50">
                         <input
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-diamond"
-                          checked={stoneDetailsStones.includes("Diamond")}
-                          onChange={() => toggleStoneDetailStone("Diamond")}
+                          checked={stones.includes("Diamond")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-diamond">
                           Diamond
@@ -3178,8 +3258,9 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-color-diamond"
-                          checked={stoneDetailsStones.includes("Color Diamond")}
-                          onChange={() => toggleStoneDetailStone("Color Diamond")}
+                          checked={stones.includes("Color Diamond")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-color-diamond">
                           Color Diamond
@@ -3192,8 +3273,9 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-gemstone"
-                          checked={stoneDetailsStones.includes("Gemstone")}
-                          onChange={() => toggleStoneDetailStone("Gemstone")}
+                          checked={stones.includes("Gemstone")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-gemstone">
                           Gemstone
@@ -3203,7 +3285,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                   </div>
 
                   {/* Sub-form for each selected stone */}
-                  {stoneDetailsStones.map((stone) => (
+                  {stones.map((stone) => (
                     <div key={stone} className="mb-4 p-3 border rounded bg-white shadow-sm">
                       <h6 className="text-black fw-bold mb-3 d-flex align-items-center">
                         <span className="badge bg-primary me-2">{stone}</span> Details
@@ -3376,7 +3458,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
             <div className="mb-3">
               <h5 className="text-black mt-4">Product Variant Configuration</h5>
               <p className="text-muted">
-                Variants are generated from Stone Type (Diamond Origin), Carat Weight and Gold Type (Metal Type).
+                Variants are generated from Stone Type (Diamond Origin), Carat Weight, Gold Type (Metal Type) and Diamond Quality.
               </p>
 
               <button
@@ -3395,6 +3477,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                         <th>Stone</th>
                         <th>Carat</th>
                         <th>Gold</th>
+                        <th>Diamond Quality</th>
                         <th>Price (₹)</th>
                         <th>Discounted Price (₹)</th>
                       </tr>
@@ -3405,6 +3488,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           <td>{v.stone_type}</td>
                           <td>{v.carat_weight}</td>
                           <td>{v.gold_type}</td>
+                          <td>{v.diamond_quality}</td>
                           <td>
                             <input
                               type="number"

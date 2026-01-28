@@ -38,6 +38,27 @@ export const productAttributesApi = apiSlice.injectEndpoints({
     getBandFits: builder.query<ProductAttributeResponse, void>({
       query: () => '/Admin/getBandFits',
     }),
+    getFlexibilityTypes: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getFlexibilityTypes',
+    }),
+    getProductSpecials: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getProductSpecials',
+    }),
+    getCollections: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getCollections',
+    }),
+    getChainLinkTypes: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getChainLinkTypes',
+    }),
+    getClosureTypes: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getClosureTypes',
+    }),
+    getStoneSettings: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getStoneSettings',
+    }),
+    getPlacementFits: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getPlacementFits',
+    }),
     // Multi-select dropdown fields
     getShankTreatments: builder.query<ProductAttributeResponse, void>({
       query: () => '/Admin/getShankTreatments',
@@ -57,6 +78,27 @@ export const productAttributesApi = apiSlice.injectEndpoints({
     getAccentStoneShapes: builder.query<ProductAttributeResponse, void>({
       query: () => '/Admin/getAccentStoneShapes',
     }),
+    getAssemblyTypes: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getAssemblyTypes',
+    }),
+    getChainTypes: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getChainTypes',
+    }),
+    getFinishDetails: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getFinishDetails',
+    }),
+    getUnitOfSales: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getUnitOfSales',
+    }),
+    getDropShapes: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getDropShapes',
+    }),
+    getAttachmentTypes: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getAttachmentTypes',
+    }),
+    getEarringOrientations: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getEarringOrientations',
+    }),
   }),
 });
 
@@ -67,11 +109,25 @@ export const {
   useGetBandProfileShapesQuery,
   useGetBandWidthCategoriesQuery,
   useGetBandFitsQuery,
+  useGetFlexibilityTypesQuery,
+  useGetProductSpecialsQuery,
+  useGetCollectionsQuery,
+  useGetChainLinkTypesQuery,
+  useGetClosureTypesQuery,
+  useGetStoneSettingsQuery,
+  useGetPlacementFitsQuery,
   useGetShankTreatmentsQuery,
   useGetStylesQuery,
   useGetSettingFeaturesQuery,
   useGetMotifThemesQuery,
   useGetOrnamentDetailsQuery,
   useGetAccentStoneShapesQuery,
+  useGetAssemblyTypesQuery,
+  useGetChainTypesQuery,
+  useGetFinishDetailsQuery,
+  useGetUnitOfSalesQuery,
+  useGetDropShapesQuery,
+  useGetAttachmentTypesQuery,
+  useGetEarringOrientationsQuery,
 } = productAttributesApi;
 

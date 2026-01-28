@@ -30,6 +30,7 @@ type VariantRow = {
   stone_type: string;
   carat_weight: string;
   gold_type: string;
+  diamond_quality: string;
   price: string;             // original price
   discounted_price: string;  // discount price
 };
@@ -63,7 +64,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [metalViewAngles, setMetalViewAngles] = useState<Record<string, string[]>>({});
 
   // Diamond fields
-  const [diamondOrigins, setDiamondOrigins] = useState<string[]>([]);
+  const [diamondOrigin, setDiamondOrigin] = useState<string>("");
   const [diamondGrading, setDiamondGrading] = useState<"single" | "double">("single");
   const [diamondQualities, setDiamondQualities] = useState<string[]>([]);
   const [diamondDropdownOpen, setDiamondDropdownOpen] = useState(false);
@@ -222,19 +223,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     });
   }, [subCategories, selectedCategory]);
 
-  // Filter subSubCategories based on selected subCategories
-  const filteredSubSubCategories = useMemo(() => {
-    if (selectedSubCategories.length === 0) {
-      return [];
-    }
-    return allSubSubCategories.filter((subSubCat) => {
-      const subCategoryId = typeof subSubCat?.subCategoryId === 'object'
-        ? subSubCat?.subCategoryId?._id
-        : subSubCat?.subCategoryId;
-      return selectedSubCategories.includes(subCategoryId);
-    });
-  }, [allSubSubCategories, selectedSubCategories]);
-
   // Get category/subcategory display names
   const getCategoryName = (category: any) => {
     if (!category) return '';
@@ -263,14 +251,42 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     return subSubCategory._id || subSubCategory.id || subSubCategory.value || '';
   };
 
+  // Filter subSubCategories based on selected subCategories
+  const filteredSubSubCategories = useMemo(() => {
+    if (selectedSubCategories.length === 0) {
+      return [];
+    }
+    return allSubSubCategories.filter((subSubCat) => {
+      const subCategoryId = typeof subSubCat?.subCategoryId === 'object'
+        ? subSubCat?.subCategoryId?._id
+        : subSubCat?.subCategoryId;
+      return selectedSubCategories.includes(subCategoryId);
+    });
+  }, [allSubSubCategories, selectedSubCategories]);
+
+  // Filter categories for Rings - only show 3 fixed categories
+  const filteredCategories = useMemo(() => {
+    const allowedCategoryNames = [
+      "Ring",
+      "Rings",
+      "Wedding Bands & Anniversary Bands",
+      "Engagement Rings"
+    ];
+    
+    return categories.filter((category) => {
+      const categoryName = getCategoryName(category);
+      return allowedCategoryNames.includes(categoryName);
+    });
+  }, [categories]);
+
   // Check if selected category is one that doesn't need subcategory/sub-subcategory
   const shouldDisableSubCategories = useMemo(() => {
     if (!selectedCategory) return false;
-    const selectedCat = categories.find((cat) => getCategoryId(cat) === selectedCategory);
+    const selectedCat = filteredCategories.find((cat) => getCategoryId(cat) === selectedCategory);
     if (!selectedCat) return false;
     const categoryName = getCategoryName(selectedCat);
     return categoryName === "Engagement Rings" || categoryName === "Wedding Bands & Anniversary Bands";
-  }, [selectedCategory, categories]);
+  }, [selectedCategory, filteredCategories]);
 
   const diamondOriginStatic = [
     { id: 1, label: "Natural", value: "natural" },
@@ -308,13 +324,16 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   ];
 
   const viewAngleOptions = [
-    { id: 1, label: "Angled view", value: "Angled view" },
-    { id: 2, label: "Top view", value: "Top view" },
-    { id: 3, label: "Side view", value: "Side view" },
-    { id: 4, label: "Images 1", value: "Image 1" },
-    { id: 5, label: "Images 2", value: "Image 2" },
-    { id: 6, label: "Images 3", value: "Image 3" },
+    { id: 1, label: "Angled view", value: "Angled view", required: true },
+    { id: 2, label: "Top view", value: "Top view", required: true },
+    { id: 3, label: "Side view", value: "Side view", required: true },
+    { id: 4, label: "Images 1", value: "Image 1", required: false },
+    { id: 5, label: "Images 2", value: "Image 2", required: false },
+    { id: 6, label: "Images 3", value: "Image 3", required: false },
   ];
+
+  const requiredViewAngles = viewAngleOptions.filter(a => a.required).map(a => a.value);
+  const optionalViewAngles = viewAngleOptions.filter(a => !a.required).map(a => a.value);
 
   // Handle video file selection
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -377,13 +396,10 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     );
   };
 
-  // Toggle diamond origin
-  const toggleDiamondOrigin = (origin: { value: string }) => {
-    setDiamondOrigins((prev) =>
-      prev.includes(origin.value)
-        ? prev.filter((o) => o !== origin.value)
-        : [...prev, origin.value]
-    );
+  // Select diamond origin (single select)
+  const selectDiamondOrigin = (origin: { value: string }) => {
+    setDiamondOrigin(origin.value);
+    setDiamondDropdownOpen(false);
   };
 
   // Toggle diamond quality
@@ -431,17 +447,38 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
         });
         return prev.filter((t) => t !== type);
       } else {
-        // Add metal type with all 3 view angles required
-        const allViewAngles = viewAngleOptions.map(a => a.value);
+        // Add metal type with only required view angles (Angled view, Top view, Side view)
         setMetalImages((imgPrev) => ({
           ...imgPrev,
           [type]: {}
         }));
         setMetalViewAngles((anglePrev) => ({
           ...anglePrev,
-          [type]: allViewAngles
+          [type]: [...requiredViewAngles]
         }));
         return [...prev, type];
+      }
+    });
+  };
+
+  // Toggle optional view angle for a metal type
+  const toggleOptionalViewAngle = (metalType: string, viewAngle: string) => {
+    setMetalViewAngles((prev) => {
+      const currentAngles = prev[metalType] || [];
+      if (currentAngles.includes(viewAngle)) {
+        // Remove optional angle
+        const updated = currentAngles.filter(a => a !== viewAngle);
+        setMetalImages((imgPrev) => {
+          const newImages = { ...imgPrev };
+          if (newImages[metalType]) {
+            delete newImages[metalType][viewAngle];
+          }
+          return newImages;
+        });
+        return { ...prev, [metalType]: updated };
+      } else {
+        // Add optional angle
+        return { ...prev, [metalType]: [...currentAngles, viewAngle] };
       }
     });
   };
@@ -694,7 +731,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setMetalTypes([]);
     setMetalImages({});
     setMetalViewAngles({});
-    setDiamondOrigins([]);
+    setDiamondOrigin("");
     setDiamondQualities([]);
     setCaratWeights([]);
     setStones([]);
@@ -866,7 +903,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       });
 
       // Diamond fields
-      diamondOrigins.forEach((origin) => formData.append("diamond_origin", origin));
+      if (diamondOrigin) {
+        formData.append("diamond_origin", diamondOrigin);
+      }
       diamondQualities.forEach((quality) => formData.append("diamond_quality", quality));
       caratWeights.forEach((weight) => formData.append("carat_weight", weight));
 
@@ -891,62 +930,87 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       // Text areas
       formData.append("engraving_allowed", engraving.toString());
       formData.append("gift", gift.toString());
-      if (productDetails.trim()) formData.append("product_details", productDetails.trim());
-      if (averageWidth.trim()) formData.append("average_width", averageWidth.trim());
-      formData.append("rhodium_plate", rhodiumPlate);
+      
+      // Product Details Configuration as an object
+      const productDetailsConfiguration = {
+        product_details: productDetails.trim() || '',
+        average_width: averageWidth.trim() || '',
+        rhodium_plate: rhodiumPlate || 'Yes'
+      };
+      formData.append("productDetailsConfiguration", JSON.stringify(productDetailsConfiguration));
 
-      // Center Stone Details
-      formData.append("center_stone_certified", centerStoneCertified);
-      if (centerStoneShape) formData.append("center_stone_shape", centerStoneShape);
-      if (centerStoneMinWeight) formData.append("center_stone_min_weight", centerStoneMinWeight);
-      if (centerStoneColor) formData.append("center_stone_color", centerStoneColor);
-      if (centerStoneColorQuality) formData.append("center_stone_color_quality", centerStoneColorQuality);
-      if (centerStoneClarity) formData.append("center_stone_clarity", centerStoneClarity);
-      if (centerStoneDiamondQuality) formData.append("center_stone_diamond_quality", centerStoneDiamondQuality);
-      if (centerStoneQualityType) formData.append("center_stone_quality_type", centerStoneQualityType);
-
-      if (centerStoneDetails.trim()) formData.append("center_stone_details", centerStoneDetails.trim());
-
-      // Side Stone Details
-      if (hasSideStone) {
-        sideStones.forEach((stone) => {
-          formData.append("side_stone", stone);
-          const data = sideStonesData[stone];
-          if (data) {
-            const stoneKey = stone.replace(/\s+/g, '_');
-            data.origins.forEach(origin => formData.append(`ss_${stoneKey}_origin`, origin));
-            if (data.quantity) formData.append(`ss_${stoneKey}_quantity`, data.quantity);
-            if (data.avgColor) formData.append(`ss_${stoneKey}_avg_color`, data.avgColor);
-            if (data.avgClarity) formData.append(`ss_${stoneKey}_avg_clarity`, data.avgClarity);
-            if (data.minDiamondWeight) formData.append(`ss_${stoneKey}_min_diamond_weight`, data.minDiamondWeight);
-            if (data.dimensions) formData.append(`ss_${stoneKey}_dimensions`, data.dimensions);
-            if (data.gemstoneType) formData.append(`ss_${stoneKey}_gemstone_type`, data.gemstoneType);
-            data.shapes.forEach(shape => formData.append(`ss_${stoneKey}_shape`, shape));
-          }
+      // Center Stone Details Configuration as an array
+      if (hasCenterStone && stones.length > 0) {
+        const centerStoneDetailsArray = stones.map((stone) => {
+          const stoneData = sideStonesData[stone] || {};
+          return {
+            stone: stone,
+            diamond_origin: stoneData.origins && stoneData.origins.length > 0 ? stoneData.origins[0] : '', // Single select - take first
+            diamond_shapes: stoneData.shapes || [],
+            min_diamond_weight: stoneData.minDiamondWeight || '',
+            quantity: stoneData.quantity || '',
+            average_color: stoneData.avgColor || '',
+            average_clarity: stoneData.avgClarity || '',
+            dimensions: stoneData.dimensions || '',
+            gemstone_type: stoneData.gemstoneType || ''
+          };
         });
+        
+        formData.append("centerStoneDetailsConfiguration", JSON.stringify(centerStoneDetailsArray));
+        
+        // Also send the global center stone fields
+        formData.append("center_stone_certified", centerStoneCertified);
+        if (centerStoneShape) formData.append("center_stone_shape", centerStoneShape);
+        if (centerStoneMinWeight) formData.append("center_stone_min_weight", centerStoneMinWeight);
+        if (centerStoneColor) formData.append("center_stone_color", centerStoneColor);
+        if (centerStoneColorQuality) formData.append("center_stone_color_quality", centerStoneColorQuality);
+        if (centerStoneClarity) formData.append("center_stone_clarity", centerStoneClarity);
+        if (centerStoneDiamondQuality) formData.append("center_stone_diamond_quality", centerStoneDiamondQuality);
+        if (centerStoneQualityType) formData.append("center_stone_quality_type", centerStoneQualityType);
+        if (centerStoneDetails.trim()) formData.append("center_stone_details", centerStoneDetails.trim());
+      }
+
+      // Side Stone Details Configuration as an array
+      if (hasSideStone && sideStones.length > 0) {
+        const sideStoneDetailsArray = sideStones.map((stone) => {
+          const stoneData = sideStonesData[stone] || {};
+          return {
+            stone: stone,
+            diamond_origin: stoneData.origins && stoneData.origins.length > 0 ? stoneData.origins[0] : '', // Single select - take first
+            diamond_shapes: stoneData.shapes || [],
+            min_diamond_weight: stoneData.minDiamondWeight || '',
+            quantity: stoneData.quantity || '',
+            average_color: stoneData.avgColor || '',
+            average_clarity: stoneData.avgClarity || '',
+            dimensions: stoneData.dimensions || '',
+            gemstone_type: stoneData.gemstoneType || ''
+          };
+        });
+        
+        formData.append("sideStoneDetailsConfiguration", JSON.stringify(sideStoneDetailsArray));
         if (sideStoneDetails.trim()) formData.append("side_stone_details", sideStoneDetails.trim());
       }
 
-      // Stone Details Form
-      if (hasStoneDetailsForm) {
-        formData.append("stone_details_certified", stoneDetailsCertified);
-        if (stoneDetailsColor) formData.append("stone_details_color", stoneDetailsColor);
-
-        stoneDetailsStones.forEach((stone) => {
-          formData.append("stone_details_stone", stone);
-          const data = stoneDetailsData[stone];
-          if (data) {
-            const stoneKey = stone.replace(/\s+/g, '_');
-            data.origins.forEach(origin => formData.append(`sd_${stoneKey}_origin`, origin));
-            if (data.quantity) formData.append(`sd_${stoneKey}_quantity`, data.quantity);
-            if (data.avgColor) formData.append(`sd_${stoneKey}_avg_color`, data.avgColor);
-            if (data.avgClarity) formData.append(`sd_${stoneKey}_avg_clarity`, data.avgClarity);
-            if (data.minDiamondWeight) formData.append(`sd_${stoneKey}_min_diamond_weight`, data.minDiamondWeight);
-            if (data.dimensions) formData.append(`sd_${stoneKey}_dimensions`, data.dimensions);
-            if (data.gemstoneType) formData.append(`sd_${stoneKey}_gemstone_type`, data.gemstoneType);
-            data.shapes.forEach(shape => formData.append(`sd_${stoneKey}_shape`, shape));
-          }
+      // Stone Details Form Configuration as an array
+      if (hasStoneDetailsForm && stones.length > 0) {
+        const stoneDetailsFormArray = stones.map((stone) => {
+          const stoneData = stoneDetailsData[stone] || {};
+          return {
+            stone: stone,
+            certified: stoneDetailsCertified || 'No',
+            color: stoneDetailsColor || '',
+            diamond_origin: stoneData.origins && stoneData.origins.length > 0 ? stoneData.origins[0] : '', // Single select - take first
+            diamond_shapes: stoneData.shapes || [],
+            min_diamond_weight: stoneData.minDiamondWeight || '',
+            quantity: stoneData.quantity || '',
+            average_color: stoneData.avgColor || '',
+            average_clarity: stoneData.avgClarity || '',
+            dimensions: stoneData.dimensions || '',
+            gemstone_type: stoneData.gemstoneType || ''
+          };
         });
+        
+        formData.append("stoneDetailsFormConfiguration", JSON.stringify(stoneDetailsFormArray));
       }
 
       if (stoneDetails.trim()) formData.append("stone_details", stoneDetails.trim());
@@ -974,6 +1038,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             diamond_type: v.stone_type,
             carat_weight: v.carat_weight,
             metal_type: v.gold_type,
+            diamond_quality: v.diamond_quality,
             price: Number(v.price),
             discounted_price: Number(v.discounted_price),
           }));
@@ -1029,10 +1094,10 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     }
   };
 
-  // Generate all combinations of Stone (diamondOrigins) × Carat × Gold (metalTypes)
+  // Generate all combinations of Stone (diamondOrigin) × Carat × Gold (metalTypes) × Diamond Quality
   const handleGenerateVariants = () => {
-    if (diamondOrigins.length === 0) {
-      toast.error("Please select at least one Stone Type (Diamond Origin)");
+    if (!diamondOrigin) {
+      toast.error("Please select a Stone Type (Diamond Origin)");
       return;
     }
     if (caratWeights.length === 0) {
@@ -1043,16 +1108,21 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       toast.error("Please select at least one Gold Type (Metal Type)");
       return;
     }
+    if (diamondQualities.length === 0) {
+      toast.error("Please select at least one Diamond Quality");
+      return;
+    }
 
     const rows: VariantRow[] = [];
 
-    diamondOrigins.forEach(stone => {
-      caratWeights.forEach(carat => {
-        metalTypes.forEach(gold => {
+    caratWeights.forEach(carat => {
+      metalTypes.forEach(gold => {
+        diamondQualities.forEach(quality => {
           rows.push({
-            stone_type: stone,
+            stone_type: diamondOrigin,
             carat_weight: `${carat}ct`,
             gold_type: gold,
+            diamond_quality: quality,
             price: "",
             discounted_price: "",
           });
@@ -1151,7 +1221,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 required
               />
             </div> */}
-            <div className="mb-3">
+            {/* <div className="mb-3">
               <label className="form-label text-black">Discount Label</label>
               <input
                 type="text"
@@ -1160,7 +1230,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                 value={discountLabel}
                 onChange={(e) => setDiscountLabel(e.target.value)}
               />
-            </div>
+            </div> */}
             {/* Single-Select Dropdown for Category */}
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={categoryDropdownRef}>
@@ -1173,7 +1243,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     <span>
                       {selectedCategory
                         ? (() => {
-                          const selectedCat = categories.find((cat) => getCategoryId(cat) === selectedCategory);
+                          const selectedCat = filteredCategories.find((cat) => getCategoryId(cat) === selectedCategory);
                           return selectedCat ? getCategoryName(selectedCat) : "Select...";
                         })()
                         : "Select..."}
@@ -1182,8 +1252,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   </div>
                   {categoryDropdownOpen && (
                     <div className="dropdown-list">
-                      {categories.length > 0 ? (
-                        categories.map((category) => {
+                      {filteredCategories.length > 0 ? (
+                        filteredCategories.map((category) => {
                           const categoryId = getCategoryId(category);
                           const categoryName = getCategoryName(category);
                           return (
@@ -1454,11 +1524,12 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   <div key={metalType} className="mb-4 p-3 border rounded">
                     <h6 className="text-black mb-3">{metalType}</h6>
 
-                    {/* View Angle Selection - All 3 Required */}
+                    {/* View Angle Selection - Required and Optional */}
                     <div className="mb-3">
-                      <label className="form-label text-black">View Angles <span className="text-danger">*</span></label>
-                      <div className="w-100">
-                        {viewAngleOptions.map((angle) => (
+                      <label className="form-label text-black">View Angles</label>
+                      <div className="w-100 mb-2">
+                        <small className="text-muted d-block mb-2">Required <span className="text-danger">*</span></small>
+                        {viewAngleOptions.filter(a => a.required).map((angle) => (
                           <div className="form-check form-check-inline" key={angle.id}>
                             <input
                               className="form-check-input"
@@ -1469,44 +1540,68 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                               readOnly
                             />
                             <label className="form-check-label text-black" htmlFor={`${metalType}-${angle.value}`}>
+                              {angle.label} <span className="text-danger">*</span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="w-100">
+                        <small className="text-muted d-block mb-2">Optional</small>
+                        {viewAngleOptions.filter(a => !a.required).map((angle) => (
+                          <div className="form-check form-check-inline" key={angle.id}>
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`${metalType}-${angle.value}`}
+                              checked={(metalViewAngles[metalType] || []).includes(angle.value)}
+                              onChange={() => toggleOptionalViewAngle(metalType, angle.value)}
+                            />
+                            <label className="form-check-label text-black" htmlFor={`${metalType}-${angle.value}`}>
                               {angle.label}
                             </label>
                           </div>
                         ))}
                       </div>
-                      <small className="text-muted">All view angles are required</small>
+                      <small className="text-muted d-block mt-2">Angled view, Top view, and Side view are required. Images 1, 2, 3 are optional.</small>
                     </div>
 
-                    {/* Image Upload for each View Angle - Single Image Required */}
+                    {/* Image Upload for each Selected View Angle */}
                     <div className="mb-3">
-                      <label className="form-label text-black">Upload Images <span className="text-danger">*</span></label>
-                      {viewAngleOptions.map((angle) => (
-                        <div key={angle.id} className="mb-3 p-2 bg-light rounded">
-                          <label className="form-label text-black fw-semibold">{angle.label} <span className="text-danger">*</span></label>
-                          <input
-                            type="file"
-                            className="form-control mb-2"
-                            accept="image/*"
-                            data-metal={metalType}
-                            data-angle={angle.value}
-                            onChange={(e) => handleMetalImageUpload(metalType, angle.value, e)}
-                          />
-                          <div className="image-preview">
-                            {metalImages[metalType]?.[angle.value] && (
-                              <div className="image-box">
-                                <img src={URL.createObjectURL(metalImages[metalType][angle.value])} alt={`${metalType} ${angle.value}`} />
-                                <button
-                                  type="button"
-                                  className="remove-btn"
-                                  onClick={() => removeMetalImage(metalType, angle.value)}
-                                >
-                                  ✖
-                                </button>
-                              </div>
-                            )}
+                      <label className="form-label text-black">Upload Images</label>
+                      {(metalViewAngles[metalType] || []).map((viewAngle) => {
+                        const angleOption = viewAngleOptions.find(a => a.value === viewAngle);
+                        if (!angleOption) return null;
+                        return (
+                          <div key={viewAngle} className="mb-3 p-2 bg-light rounded">
+                            <label className="form-label text-black fw-semibold">
+                              {angleOption.label} 
+                              {angleOption.required && <span className="text-danger"> *</span>}
+                            </label>
+                            <input
+                              type="file"
+                              className="form-control mb-2"
+                              accept="image/*"
+                              data-metal={metalType}
+                              data-angle={viewAngle}
+                              onChange={(e) => handleMetalImageUpload(metalType, viewAngle, e)}
+                            />
+                            <div className="image-preview">
+                              {metalImages[metalType]?.[viewAngle] && (
+                                <div className="image-box">
+                                  <img src={URL.createObjectURL(metalImages[metalType][viewAngle])} alt={`${metalType} ${viewAngle}`} />
+                                  <button
+                                    type="button"
+                                    className="remove-btn"
+                                    onClick={() => removeMetalImage(metalType, viewAngle)}
+                                  >
+                                    ✖
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -1521,8 +1616,11 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     onClick={() => setDiamondDropdownOpen(!diamondDropdownOpen)}
                   >
                     <span>
-                      {diamondOrigins.length
-                        ? `Selected: ${diamondOrigins.join(", ")}`
+                      {diamondOrigin
+                        ? (() => {
+                          const selected = diamondOriginStatic.find((o) => o.value === diamondOrigin);
+                          return selected ? selected.label : "Select...";
+                        })()
                         : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
@@ -1532,12 +1630,13 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                       {diamondOriginStatic.map((origin) => (
                         <label className="dropdown-item" key={origin.id}>
                           <input
-                            type="checkbox"
+                            type="radio"
+                            name="diamondOrigin"
                             value={origin.value}
-                            checked={diamondOrigins.includes(origin.value)}
+                            checked={diamondOrigin === origin.value}
                             onChange={(e) => {
                               e.stopPropagation();
-                              toggleDiamondOrigin(origin);
+                              selectDiamondOrigin(origin);
                             }}
                           />
                           {origin.label}
@@ -1732,18 +1831,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   />
                   <label className="form-check-label text-black" htmlFor="stone-gemstone">
                     Gemstone
-                  </label>
-                </div>
-                <div className="form-check w-50">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="stone-none"
-                    checked={stones.includes("None")}
-                    onChange={() => toggleStone("None")}
-                  />
-                  <label className="form-check-label text-black" htmlFor="stone-none">
-                    None
                   </label>
                 </div>
               </div>
@@ -2549,9 +2636,10 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
               {/* ✅ Show section only if toggle ON AND accordion open */}
               {hasCenterStone && isCenterStoneAccordionOpen && (
                 <div className="mt-3">
-                  {/* 1. Add Stone - Reusing existing stone fields */}
+                  {/* 1. Add Stone - Synced with main Stone section (read-only) */}
                   <div className="mb-3">
                     <label className="form-label text-black">Stone</label>
+                    <small className="text-muted d-block mb-2">(Select stones from the main Stone section above)</small>
                     <div className="w-100 half-divide">
                       <div className="form-check w-50">
                         <input
@@ -2559,7 +2647,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           type="checkbox"
                           id="cs-stone-diamond"
                           checked={stones.includes("Diamond")}
-                          onChange={() => toggleStone("Diamond")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-diamond">
                           Diamond
@@ -2571,7 +2660,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           type="checkbox"
                           id="cs-stone-color-diamond"
                           checked={stones.includes("Color Diamond")}
-                          onChange={() => toggleStone("Color Diamond")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-color-diamond">
                           Color Diamond
@@ -2585,7 +2675,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           type="checkbox"
                           id="cs-stone-gemstone"
                           checked={stones.includes("Gemstone")}
-                          onChange={() => toggleStone("Gemstone")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-gemstone">
                           Gemstone
@@ -3148,17 +3239,19 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     />
                   </div>
 
-                  {/* 1. Stone selection */}
+                  {/* 1. Stone selection - Synced with main Stone section (read-only) */}
                   <div className="mb-3">
                     <label className="form-label text-black">Stone</label>
+                    <small className="text-muted d-block mb-2">(Select stones from the main Stone section above)</small>
                     <div className="w-100 half-divide">
                       <div className="form-check w-50">
                         <input
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-diamond"
-                          checked={stoneDetailsStones.includes("Diamond")}
-                          onChange={() => toggleStoneDetailStone("Diamond")}
+                          checked={stones.includes("Diamond")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-diamond">
                           Diamond
@@ -3169,8 +3262,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-color-diamond"
-                          checked={stoneDetailsStones.includes("Color Diamond")}
-                          onChange={() => toggleStoneDetailStone("Color Diamond")}
+                          checked={stones.includes("Color Diamond")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-color-diamond">
                           Color Diamond
@@ -3183,8 +3277,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-gemstone"
-                          checked={stoneDetailsStones.includes("Gemstone")}
-                          onChange={() => toggleStoneDetailStone("Gemstone")}
+                          checked={stones.includes("Gemstone")}
+                          disabled
+                          readOnly
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-gemstone">
                           Gemstone
@@ -3194,7 +3289,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   </div>
 
                   {/* Sub-form for each selected stone */}
-                  {stoneDetailsStones.map((stone) => (
+                  {stones.map((stone) => (
                     <div key={stone} className="mb-4 p-3 border rounded bg-white shadow-sm">
                       <h6 className="text-black fw-bold mb-3 d-flex align-items-center">
                         <span className="badge bg-primary me-2">{stone}</span> Details
@@ -3366,7 +3461,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             <div className="mb-3">
               <h5 className="text-black mt-4">Product Variant Configuration</h5>
               <p className="text-muted">
-                Variants are generated from Stone Type (Diamond Origin), Carat Weight and Gold Type (Metal Type).
+                Variants are generated from Stone Type (Diamond Origin), Carat Weight, Gold Type (Metal Type) and Diamond Quality.
               </p>
 
               <button
@@ -3385,6 +3480,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                         <th>Stone</th>
                         <th>Carat</th>
                         <th>Gold</th>
+                        <th>Diamond Quality</th>
                         <th>Price (₹)</th>
                         <th>Discounted Price (₹)</th>
                       </tr>
@@ -3395,6 +3491,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           <td>{v.stone_type}</td>
                           <td>{v.carat_weight}</td>
                           <td>{v.gold_type}</td>
+                          <td>{v.diamond_quality}</td>
                           <td>
                             <input
                               type="number"

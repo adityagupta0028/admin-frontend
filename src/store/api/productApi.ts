@@ -116,6 +116,30 @@ export const productApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Product'],
     }),
+    createBraceletProduct: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/createBraceletProduct',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
+    createNecklaceProduct: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/createNecklaceProduct',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
+    createEarringsProduct: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/createEarringsProduct',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
     updateProduct: builder.mutation<ProductResponse, { id: string; formData: FormData }>({
       query: ({ id, formData }) => ({
         url: `/Admin/updateProduct/${id}`,
@@ -139,6 +163,9 @@ export const {
   useGetProductDetailQuery,
   useGetProductByProductIdQuery,
   useCreateProductMutation,
+  useCreateBraceletProductMutation,
+  useCreateNecklaceProductMutation,
+  useCreateEarringsProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productApi;
