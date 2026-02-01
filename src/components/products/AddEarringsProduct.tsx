@@ -1081,6 +1081,12 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
       // Metal types
       metalTypes.forEach((type) => formData.append("metal_type", type));
 
+      // Shape
+      selectedShapes.forEach((shape) => formData.append("shape", shape));
+
+      // Karat
+      selectedMetalKarats.forEach((karat) => formData.append("karat", karat));
+
       // Metal Images - send single file per view angle for each combination
       // Format: metal_images_${metalType}_${shape}_${viewAngle}
       metalTypes.forEach((metalType) => {
@@ -1212,7 +1218,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
             carat_weight: v.carat_weight,
             metal_type: v.gold_type,
             diamond_quality: v.diamond_quality,
-            shape: v.shape,
+            shape: v.shape || '',
             price: Number(v.price),
             discounted_price: Number(v.discounted_price),
           }));
@@ -1407,7 +1413,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
                 required
               />
             </div> */}
-            <div className="mb-3">
+            {/* <div className="mb-3">
               <label className="form-label text-black">Discount Label</label>
               <input
                 type="text"
@@ -1416,7 +1422,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
                 value={discountLabel}
                 onChange={(e) => setDiscountLabel(e.target.value)}
               />
-            </div>
+            </div> */}
             {/* Single-Select Dropdown for Category */}
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={categoryDropdownRef}>

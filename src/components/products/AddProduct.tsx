@@ -974,6 +974,12 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       // Metal types
       metalTypes.forEach((type) => formData.append("metal_type", type));
 
+      // Shape
+      selectedShapes.forEach((shape) => formData.append("shape", shape));
+
+      // Karat
+      selectedMetalKarats.forEach((karat) => formData.append("karat", karat));
+
       // Metal Images - send single file per view angle for each combination
       // Format: metal_images_${metalType}_${shape}_${viewAngle}
       metalTypes.forEach((metalType) => {
@@ -1130,7 +1136,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             carat_weight: v.carat_weight,
             metal_type: v.gold_type,
             diamond_quality: v.diamond_quality,
-            shape: v.shape,
+            shape: v.shape || '',
             price: Number(v.price),
             discounted_price: Number(v.discounted_price),
           }));

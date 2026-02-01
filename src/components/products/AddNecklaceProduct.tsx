@@ -948,10 +948,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       toast.error("Please select Setting Type");
       return;
     }
-    if (!bandProfileShapes) {
-      toast.error("Please select Band Profile Shapes");
-      return;
-    }
+    // Band Profile Shapes is optional for necklaces - removed validation
     // Band Width Categories is optional for necklaces - removed validation
     if (bandFits.length === 0) {
       toast.error("Please select at least one Stone Setting");
@@ -1014,6 +1011,12 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
 
       // Metal types
       metalTypes.forEach((type) => formData.append("metal_type", type));
+
+      // Shape
+      selectedShapes.forEach((shape) => formData.append("shape", shape));
+
+      // Karat
+      selectedMetalKarats.forEach((karat) => formData.append("karat", karat));
 
       // Metal Images - send single file per view angle for each combination
       // Format: metal_images_${metalType}_${shape}_${viewAngle}
@@ -1146,7 +1149,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
             carat_weight: v.carat_weight,
             metal_type: v.gold_type,
             diamond_quality: v.diamond_quality,
-            shape: v.shape,
+            shape: v.shape || '',
             price: Number(v.price),
             discounted_price: Number(v.discounted_price),
           }));
@@ -2424,7 +2427,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
             </div>
 
             <div className="mb-3">
-              <label className="form-label text-black">Lock (ClosureType linked) *</label>
+              <label className="form-label text-black">Lock (ClosureType linked)</label>
               <div>
                 {closureTypes.length > 0 ? (
                   closureTypes.map((item) => (
