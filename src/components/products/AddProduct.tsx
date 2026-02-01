@@ -31,6 +31,7 @@ type VariantRow = {
   carat_weight: string;
   gold_type: string;
   diamond_quality: string;
+  shape: string;
   price: string;             // original price
   discounted_price: string;  // discount price
 };
@@ -55,7 +56,23 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   const [variants, setVariants] = useState<VariantRow[]>([]);
 
   // Metal Type
-  const [metalTypes, setMetalTypes] = useState<string[]>([]);
+  const [selectedMetalColors, setSelectedMetalColors] = useState<string[]>([]);
+  const [selectedMetalKarats, setSelectedMetalKarats] = useState<string[]>([]);
+  const [selectedShapes, setSelectedShapes] = useState<string[]>([]);
+  const [selectedDesignStyles, setSelectedDesignStyles] = useState<string[]>([]);
+  const metalTypes = useMemo(() => {
+    const types: string[] = [];
+    selectedMetalColors.forEach(color => {
+      if (color === "Platinum") {
+        types.push("Platinum");
+      } else {
+        selectedMetalKarats.forEach(karat => {
+          types.push(`${karat} ${color}`);
+        });
+      }
+    });
+    return types;
+  }, [selectedMetalColors, selectedMetalKarats]);
 
   // Metal Images: { [metalType]: { [viewAngle]: File } } - single image per view angle
   const [metalImages, setMetalImages] = useState<Record<string, Record<string, File>>>({});
@@ -272,7 +289,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       "Wedding Bands & Anniversary Bands",
       "Engagement Rings"
     ];
-    
+
     return categories.filter((category) => {
       const categoryName = getCategoryName(category);
       return allowedCategoryNames.includes(categoryName);
@@ -429,36 +446,98 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     );
   };
 
-  // Toggle metal type
-  const toggleMetalType = (type: string) => {
-    setMetalTypes((prev) => {
-      const isRemoving = prev.includes(type);
+  // Toggle metal color
+  const toggleMetalColor = (color: string) => {
+    setSelectedMetalColors((prev) => {
+      const isRemoving = prev.includes(color);
       if (isRemoving) {
-        // Remove metal type and its associated data
+        // Remove metal color and its associated image data for all shapes
         setMetalImages((imgPrev) => {
           const newImages = { ...imgPrev };
-          delete newImages[type];
+          selectedShapes.forEach(shape => {
+            delete newImages[`${color}_${shape}`];
+          });
           return newImages;
         });
         setMetalViewAngles((anglePrev) => {
           const newAngles = { ...anglePrev };
-          delete newAngles[type];
+          selectedShapes.forEach(shape => {
+            delete newAngles[`${color}_${shape}`];
+          });
           return newAngles;
         });
-        return prev.filter((t) => t !== type);
+        return prev.filter((c) => c !== color);
       } else {
-        // Add metal type with only required view angles (Angled view, Top view, Side view)
-        setMetalImages((imgPrev) => ({
-          ...imgPrev,
-          [type]: {}
-        }));
-        setMetalViewAngles((anglePrev) => ({
-          ...anglePrev,
-          [type]: [...requiredViewAngles]
-        }));
-        return [...prev, type];
+        // Add metal color - setup required angles for all selected shapes
+        const newImagesAdd: Record<string, Record<string, File>> = {};
+        const newAnglesAdd: Record<string, string[]> = {};
+        selectedShapes.forEach(shape => {
+          const key = `${color}_${shape}`;
+          newImagesAdd[key] = {};
+          newAnglesAdd[key] = ["Angled view", "Top view", "Side view"];
+        });
+
+        setMetalImages((imgPrev) => ({ ...imgPrev, ...newImagesAdd }));
+        setMetalViewAngles((anglePrev) => ({ ...anglePrev, ...newAnglesAdd }));
+        return [...prev, color];
       }
     });
+  };
+
+  // Toggle shape
+  const toggleShape = (shape: string) => {
+    setSelectedShapes((prev) => {
+      const isRemoving = prev.includes(shape);
+      if (isRemoving) {
+        // Remove shape and its associated image data for all colors
+        setMetalImages((imgPrev) => {
+          const newImages = { ...imgPrev };
+          selectedMetalColors.forEach(color => {
+            delete newImages[`${color}_${shape}`];
+          });
+          return newImages;
+        });
+        setMetalViewAngles((anglePrev) => {
+          const newAngles = { ...anglePrev };
+          selectedMetalColors.forEach(color => {
+            delete newAngles[`${color}_${shape}`];
+          });
+          return newAngles;
+        });
+        return prev.filter((s) => s !== shape);
+      } else {
+        // Add shape - setup required angles for all selected colors
+        const newImagesAdd: Record<string, Record<string, File>> = {};
+        const newAnglesAdd: Record<string, string[]> = {};
+        selectedMetalColors.forEach(color => {
+          const key = `${color}_${shape}`;
+          newImagesAdd[key] = {};
+          newAnglesAdd[key] = ["Angled view", "Top view", "Side view"];
+        });
+
+        setMetalImages((imgPrev) => ({ ...imgPrev, ...newImagesAdd }));
+        setMetalViewAngles((anglePrev) => ({ ...anglePrev, ...newAnglesAdd }));
+        return [...prev, shape];
+      }
+    });
+  };
+
+  // Toggle metal karat
+  const toggleMetalKarat = (karat: string) => {
+    setSelectedMetalKarats((prev) =>
+      prev.includes(karat)
+        ? prev.filter((k) => k !== karat)
+        : [...prev, karat]
+    );
+  };
+
+  // Toggle design style
+  const toggleDesignStyle = (style: string) => {
+    setSelectedDesignStyles((prev) =>
+      prev.includes(style)
+        ? prev.filter((s) => s !== style)
+        : [...prev, style]
+    );
   };
 
   // Toggle optional view angle for a metal type
@@ -728,7 +807,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setSelectedCategory("");
     setSelectedSubCategories([]);
     setSelectedSubSubCategories([]);
-    setMetalTypes([]);
+    setSelectedMetalColors([]);
+    setSelectedMetalKarats([]);
+    setSelectedShapes([]);
     setMetalImages({});
     setMetalViewAngles({});
     setDiamondOrigin("");
@@ -780,6 +861,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setStoneDetailsData({});
     setStoneDetailsCertified("No");
     setStoneDetailsColor("");
+    setSelectedDesignStyles([]);
   };
 
   // Handle form submission
@@ -855,14 +937,17 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       return;
     }
 
-    // Validate metal images - mandatory view angles must have images for each metal type
-    if (metalTypes.length > 0) {
+    // Validate metal images - mandatory view angles must have images for each color + shape combination
+    if (selectedMetalColors.length > 0 && selectedShapes.length > 0) {
       const mandatoryAngles = ["Angled view", "Top view", "Side view"];
-      for (const metalType of metalTypes) {
-        for (const viewAngle of mandatoryAngles) {
-          if (!metalImages[metalType]?.[viewAngle]) {
-            toast.error(`Please upload an image for ${viewAngle} of ${metalType}`);
-            return;
+      for (const color of selectedMetalColors) {
+        for (const shape of selectedShapes) {
+          const key = `${color}_${shape}`;
+          for (const viewAngle of mandatoryAngles) {
+            if (!metalImages[key]?.[viewAngle]) {
+              toast.error(`Please upload an image for ${viewAngle} of ${color} (${shape})`);
+              return;
+            }
           }
         }
       }
@@ -889,17 +974,23 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       // Metal types
       metalTypes.forEach((type) => formData.append("metal_type", type));
 
-      // Metal Images - send single file per view angle
-      // Format: metal_images_${metalType}_${viewAngle}
+      // Metal Images - send single file per view angle for each combination
+      // Format: metal_images_${metalType}_${shape}_${viewAngle}
       metalTypes.forEach((metalType) => {
-        const viewAngles = metalViewAngles[metalType] || [];
-        viewAngles.forEach((viewAngle) => {
-          const imageFile = metalImages[metalType]?.[viewAngle];
-          if (imageFile) {
-            const fieldName = `metal_images_${metalType.replace(/\s+/g, '_')}_${viewAngle.replace(/\s+/g, '_')}`;
-            formData.append(fieldName, imageFile);
-          }
-        });
+        const metalColor = ["Rose Gold", "Yellow Gold", "White Gold", "Platinum"].find(color => metalType.includes(color));
+        if (metalColor) {
+          selectedShapes.forEach(shape => {
+            const key = `${metalColor}_${shape}`;
+            const viewAngles = metalViewAngles[key] || [];
+            viewAngles.forEach((viewAngle) => {
+              const imageFile = metalImages[key]?.[viewAngle];
+              if (imageFile) {
+                const fieldName = `metal_images_${metalType.replace(/\s+/g, '_')}_${shape.replace(/\s+/g, '_')}_${viewAngle.replace(/\s+/g, '_')}`;
+                formData.append(fieldName, imageFile);
+              }
+            });
+          });
+        }
       });
 
       // Diamond fields
@@ -930,7 +1021,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       // Text areas
       formData.append("engraving_allowed", engraving.toString());
       formData.append("gift", gift.toString());
-      
+
       // Product Details Configuration as an object
       const productDetailsConfiguration = {
         product_details: productDetails.trim() || '',
@@ -955,9 +1046,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             gemstone_type: stoneData.gemstoneType || ''
           };
         });
-        
+
         formData.append("centerStoneDetailsConfiguration", JSON.stringify(centerStoneDetailsArray));
-        
+
         // Also send the global center stone fields
         formData.append("center_stone_certified", centerStoneCertified);
         if (centerStoneShape) formData.append("center_stone_shape", centerStoneShape);
@@ -986,7 +1077,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             gemstone_type: stoneData.gemstoneType || ''
           };
         });
-        
+
         formData.append("sideStoneDetailsConfiguration", JSON.stringify(sideStoneDetailsArray));
         if (sideStoneDetails.trim()) formData.append("side_stone_details", sideStoneDetails.trim());
       }
@@ -1009,7 +1100,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             gemstone_type: stoneData.gemstoneType || ''
           };
         });
-        
+
         formData.append("stoneDetailsFormConfiguration", JSON.stringify(stoneDetailsFormArray));
       }
 
@@ -1039,6 +1130,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             carat_weight: v.carat_weight,
             metal_type: v.gold_type,
             diamond_quality: v.diamond_quality,
+            shape: v.shape,
             price: Number(v.price),
             discounted_price: Number(v.discounted_price),
           }));
@@ -1082,6 +1174,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       settingFeatures.forEach((id) => formData.append("settingFeatures", id));
       motifThemes.forEach((id) => formData.append("motifThemes", id));
       ornamentDetails.forEach((id) => formData.append("ornamentDetails", id));
+      selectedDesignStyles.forEach((style) => formData.append("design_styles", style));
 
       await createProduct(formData).unwrap();
       toast.success("Product created successfully!");
@@ -1104,12 +1197,20 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       toast.error("Please select at least one Carat Weight");
       return;
     }
-    if (metalTypes.length === 0) {
-      toast.error("Please select at least one Gold Type (Metal Type)");
+    if (selectedMetalColors.length === 0) {
+      toast.error("Please select at least one Metal Color");
+      return;
+    }
+    if (selectedMetalColors.some(c => c !== "Platinum") && selectedMetalKarats.length === 0) {
+      toast.error("Please select at least one Karat");
       return;
     }
     if (diamondQualities.length === 0) {
       toast.error("Please select at least one Diamond Quality");
+      return;
+    }
+    if (selectedShapes.length === 0) {
+      toast.error("Please select at least one Shape");
       return;
     }
 
@@ -1118,13 +1219,16 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     caratWeights.forEach(carat => {
       metalTypes.forEach(gold => {
         diamondQualities.forEach(quality => {
-          rows.push({
-            stone_type: diamondOrigin,
-            carat_weight: `${carat}ct`,
-            gold_type: gold,
-            diamond_quality: quality,
-            price: "",
-            discounted_price: "",
+          selectedShapes.forEach(shape => {
+            rows.push({
+              stone_type: diamondOrigin,
+              carat_weight: `${carat}ct`,
+              gold_type: gold,
+              diamond_quality: quality,
+              shape: shape,
+              price: "",
+              discounted_price: "",
+            });
           });
         });
       });
@@ -1434,176 +1538,182 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
 
 
-            {/* Checkboxes */}
+            {/* Metal Selection */}
             <div className="mb-3">
-              <label className="form-label text-black">Metal Type</label>
-              <div className="w-100 half-divide">
-
-                <div className="form-check w-50">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="metal1"
-                    checked={metalTypes.includes("14K White Gold")}
-                    onChange={() => toggleMetalType("14K White Gold")}
-                  />
-                  <label className="form-check-label text-black" htmlFor="metal1">14K White Gold</label>
-                </div>
-                <div className="form-check w-50">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="metal2"
-                    checked={metalTypes.includes("14K Yellow Gold")}
-                    onChange={() => toggleMetalType("14K Yellow Gold")}
-                  />
-                  <label className="form-check-label text-black" htmlFor="metal2">14K Yellow Gold</label>
-                </div>
-              </div>
-              <div className="w-100 half-divide">
-                <div className="form-check w-50">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="metal3"
-                    checked={metalTypes.includes("14K Rose Gold")}
-                    onChange={() => toggleMetalType("14K Rose Gold")}
-                  />
-                  <label className="form-check-label text-black" htmlFor="metal3">14K Rose Gold</label>
-                </div>
-                <div className="form-check w-50">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="metal4"
-                    checked={metalTypes.includes("18K White Gold")}
-                    onChange={() => toggleMetalType("18K White Gold")}
-                  />
-                  <label className="form-check-label text-black" htmlFor="metal4">18K White Gold</label>
-                </div>
-              </div>
-              <div className="w-100 half-divide">
-                <div className="form-check w-50">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="metal5"
-                    checked={metalTypes.includes("18K Yellow Gold")}
-                    onChange={() => toggleMetalType("18K Yellow Gold")}
-                  />
-                  <label className="form-check-label text-black" htmlFor="metal5">18K Yellow Gold</label>
-                </div>
-                <div className="form-check w-50">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="metal6"
-                    checked={metalTypes.includes("18K Rose Gold")}
-                    onChange={() => toggleMetalType("18K Rose Gold")}
-                  />
-                  <label className="form-check-label text-black" htmlFor="metal6">18K Rose Gold</label>
-                </div>
-                <div className="form-check w-50">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="metal7"
-                    checked={metalTypes.includes("Platinum")}
-                    onChange={() => toggleMetalType("Platinum")}
-                  />
-                  <label className="form-check-label text-black" htmlFor="metal7">Platinum</label>
-                </div>
+              <label className="form-label text-black fw-bold">Metal Color</label>
+              <div className="d-flex flex-wrap gap-3">
+                {["Rose Gold", "Yellow Gold", "White Gold", "Platinum"].map((color) => (
+                  <div className="form-check" key={color}>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`color-${color.replace(/\s+/g, '')}`}
+                      checked={selectedMetalColors.includes(color)}
+                      onChange={() => toggleMetalColor(color)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`color-${color.replace(/\s+/g, '')}`}>
+                      {color}
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* View Angle and Image Upload per Metal Type */}
-            {metalTypes.length > 0 && (
-              <div className="mb-3">
-                <label className="form-label text-black fw-bold">View Angle & Image Upload (per Metal Type)</label>
-                {metalTypes.map((metalType) => (
-                  <div key={metalType} className="mb-4 p-3 border rounded">
-                    <h6 className="text-black mb-3">{metalType}</h6>
-
-                    {/* View Angle Selection - Required and Optional */}
-                    <div className="mb-3">
-                      <label className="form-label text-black">View Angles</label>
-                      <div className="w-100 mb-2">
-                        <small className="text-muted d-block mb-2">Required <span className="text-danger">*</span></small>
-                        {viewAngleOptions.filter(a => a.required).map((angle) => (
-                          <div className="form-check form-check-inline" key={angle.id}>
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`${metalType}-${angle.value}`}
-                              checked={(metalViewAngles[metalType] || []).includes(angle.value)}
-                              disabled
-                              readOnly
-                            />
-                            <label className="form-check-label text-black" htmlFor={`${metalType}-${angle.value}`}>
-                              {angle.label} <span className="text-danger">*</span>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="w-100">
-                        <small className="text-muted d-block mb-2">Optional</small>
-                        {viewAngleOptions.filter(a => !a.required).map((angle) => (
-                          <div className="form-check form-check-inline" key={angle.id}>
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`${metalType}-${angle.value}`}
-                              checked={(metalViewAngles[metalType] || []).includes(angle.value)}
-                              onChange={() => toggleOptionalViewAngle(metalType, angle.value)}
-                            />
-                            <label className="form-check-label text-black" htmlFor={`${metalType}-${angle.value}`}>
-                              {angle.label}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                      <small className="text-muted d-block mt-2">Angled view, Top view, and Side view are required. Images 1, 2, 3 are optional.</small>
-                    </div>
-
-                    {/* Image Upload for each Selected View Angle */}
-                    <div className="mb-3">
-                      <label className="form-label text-black">Upload Images</label>
-                      {(metalViewAngles[metalType] || []).map((viewAngle) => {
-                        const angleOption = viewAngleOptions.find(a => a.value === viewAngle);
-                        if (!angleOption) return null;
-                        return (
-                          <div key={viewAngle} className="mb-3 p-2 bg-light rounded">
-                            <label className="form-label text-black fw-semibold">
-                              {angleOption.label} 
-                              {angleOption.required && <span className="text-danger"> *</span>}
-                            </label>
-                            <input
-                              type="file"
-                              className="form-control mb-2"
-                              accept="image/*"
-                              data-metal={metalType}
-                              data-angle={viewAngle}
-                              onChange={(e) => handleMetalImageUpload(metalType, viewAngle, e)}
-                            />
-                            <div className="image-preview">
-                              {metalImages[metalType]?.[viewAngle] && (
-                                <div className="image-box">
-                                  <img src={URL.createObjectURL(metalImages[metalType][viewAngle])} alt={`${metalType} ${viewAngle}`} />
-                                  <button
-                                    type="button"
-                                    className="remove-btn"
-                                    onClick={() => removeMetalImage(metalType, viewAngle)}
-                                  >
-                                    ✖
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+            {/* Shape Selection */}
+            <div className="mb-3">
+              <label className="form-label text-black fw-bold">Shape</label>
+              <div className="d-flex flex-wrap gap-3">
+                {["Oval", "Circle", "Round", "Heart"].map((shape) => (
+                  <div className="form-check" key={shape}>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`shape-${shape.replace(/\s+/g, '')}`}
+                      checked={selectedShapes.includes(shape)}
+                      onChange={() => toggleShape(shape)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`shape-${shape.replace(/\s+/g, '')}`}>
+                      {shape}
+                    </label>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-black fw-bold">Karat (Except Platinum)</label>
+              <div className="d-flex flex-wrap gap-3">
+                {["14K", "18K"].map((karat) => (
+                  <div className="form-check" key={karat}>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`karat-${karat}`}
+                      checked={selectedMetalKarats.includes(karat)}
+                      onChange={() => toggleMetalKarat(karat)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`karat-${karat}`}>
+                      {karat}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Design Styles Selection */}
+            <div className="mb-3">
+              <label className="form-label text-black fw-bold">Design Styles</label>
+              <div className="d-flex flex-wrap gap-3">
+                {["Halo", "Solitaire", "Vintage", "Modern", "Minimalist", "Bohemian", "Art Deco", "Classic", "Side-Stone", "Three-Stone"].map((style) => (
+                  <div className="form-check" key={style}>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`style-${style.replace(/\s+/g, '')}`}
+                      checked={selectedDesignStyles.includes(style)}
+                      onChange={() => toggleDesignStyle(style)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`style-${style.replace(/\s+/g, '')}`}>
+                      {style}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* View Angle and Image Upload per Metal Color and Shape */}
+            {selectedMetalColors.length > 0 && selectedShapes.length > 0 && (
+              <div className="mb-3">
+                <label className="form-label text-black fw-bold">View Angle & Image Upload (per Metal Color & Shape)</label>
+                {selectedMetalColors.map((color) => (
+                  selectedShapes.map((shape) => {
+                    const key = `${color}_${shape}`;
+                    return (
+                      <div key={key} className="mb-4 p-3 border rounded">
+                        <h6 className="text-black mb-3">{color} ({shape})</h6>
+
+                        {/* View Angle Selection - Required and Optional */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">View Angles</label>
+                          <div className="w-100 mb-2">
+                            <small className="text-muted d-block mb-2">Required <span className="text-danger">*</span></small>
+                            {viewAngleOptions.filter(a => a.required).map((angle) => (
+                              <div className="form-check form-check-inline" key={angle.id}>
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`${key}-${angle.value}`}
+                                  checked={(metalViewAngles[key] || []).includes(angle.value)}
+                                  disabled
+                                  readOnly
+                                />
+                                <label className="form-check-label text-black" htmlFor={`${key}-${angle.value}`}>
+                                  {angle.label} <span className="text-danger">*</span>
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="w-100">
+                            <small className="text-muted d-block mb-2">Optional</small>
+                            {viewAngleOptions.filter(a => !a.required).map((angle) => (
+                              <div className="form-check form-check-inline" key={angle.id}>
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`${key}-${angle.value}`}
+                                  checked={(metalViewAngles[key] || []).includes(angle.value)}
+                                  onChange={() => toggleOptionalViewAngle(key, angle.value)}
+                                />
+                                <label className="form-check-label text-black" htmlFor={`${key}-${angle.value}`}>
+                                  {angle.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                          <small className="text-muted d-block mt-2">Angled view, Top view, and Side view are required. Images 1, 2, 3 are optional.</small>
+                        </div>
+
+                        {/* Image Upload for each Selected View Angle */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Upload Images</label>
+                          {(metalViewAngles[key] || []).map((viewAngle) => {
+                            const angleOption = viewAngleOptions.find(a => a.value === viewAngle);
+                            if (!angleOption) return null;
+                            return (
+                              <div key={viewAngle} className="mb-3 p-2 bg-light rounded">
+                                <label className="form-label text-black fw-semibold text-capitalize">
+                                  {angleOption.label}
+                                  {angleOption.required && <span className="text-danger"> *</span>}
+                                </label>
+                                <input
+                                  type="file"
+                                  className="form-control mb-2"
+                                  accept="image/*"
+                                  data-metal={key}
+                                  data-angle={viewAngle}
+                                  onChange={(e) => handleMetalImageUpload(key, viewAngle, e)}
+                                />
+                                <div className="image-preview">
+                                  {metalImages[key]?.[viewAngle] && (
+                                    <div className="image-box">
+                                      <img src={URL.createObjectURL(metalImages[key][viewAngle])} alt={`${color} ${shape} ${viewAngle}`} />
+                                      <button
+                                        type="button"
+                                        className="remove-btn"
+                                        onClick={() => removeMetalImage(key, viewAngle)}
+                                      >
+                                        ✖
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })
                 ))}
               </div>
             )}
@@ -3481,6 +3591,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                         <th>Carat</th>
                         <th>Gold</th>
                         <th>Diamond Quality</th>
+                        <th>Shape</th>
                         <th>Price (₹)</th>
                         <th>Discounted Price (₹)</th>
                       </tr>
@@ -3492,6 +3603,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           <td>{v.carat_weight}</td>
                           <td>{v.gold_type}</td>
                           <td>{v.diamond_quality}</td>
+                          <td>{v.shape}</td>
                           <td>
                             <input
                               type="number"
