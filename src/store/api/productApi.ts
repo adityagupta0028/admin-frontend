@@ -140,6 +140,14 @@ export const productApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Product'],
     }),
+    importRingProducts: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/import-ring-product',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
     updateProduct: builder.mutation<ProductResponse, { id: string; formData: FormData }>({
       query: ({ id, formData }) => ({
         url: `/Admin/updateProduct/${id}`,
@@ -166,6 +174,7 @@ export const {
   useCreateBraceletProductMutation,
   useCreateNecklaceProductMutation,
   useCreateEarringsProductMutation,
+  useImportRingProductsMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productApi;

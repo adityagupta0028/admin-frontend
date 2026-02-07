@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Modal from "react-bootstrap/Modal";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useCreateProductMutation } from "../../store/api/productApi";
+import { useCreateProductMutation, useImportRingProductsMutation } from "../../store/api/productApi";
 import {
   useGetSettingConfigurationsQuery,
   useGetShankConfigurationsQuery,
@@ -117,7 +117,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   // Radio button fields (single select)
   const [settingConfigurations, setSettingConfigurations] = useState<string>("");
   const [shankConfigurations, setShankConfigurations] = useState<string>("");
-  const [holdingMethods, setHoldingMethods] = useState<string>("");
   const [bandProfileShapes, setBandProfileShapes] = useState<string>("");
   const [bandWidthCategories, setBandWidthCategories] = useState<string>("");
   const [bandFits, setBandFits] = useState<string>("");
@@ -165,6 +164,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     avgColor: string;
     avgClarity: string;
     minDiamondWeight: string;
+    holdingMethods: string[];
   }>>({});
 
   // Stone Details Form Fields
@@ -180,6 +180,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     avgColor: string;
     avgClarity: string;
     minDiamondWeight: string;
+    holdingMethods: string[];
   }>>({});
   const [stoneDetailsCertified, setStoneDetailsCertified] = useState<string>("No");
   const [stoneDetailsColor, setStoneDetailsColor] = useState<string>("");
@@ -200,6 +201,10 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
   // Loading state
   const [createProduct, { isLoading }] = useCreateProductMutation();
+  const [importRingProducts, { isLoading: isImporting }] = useImportRingProductsMutation();
+  
+  // CSV Import state
+  const [csvFile, setCsvFile] = useState<File | null>(null);
 
   // Fetch product attributes
   const { data: settingConfigurationsData } = useGetSettingConfigurationsQuery();
@@ -615,7 +620,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       } else {
         setSideStonesData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "" }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -665,7 +670,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       } else {
         setStoneDetailsData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "" }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -694,6 +699,42 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
         [stone]: {
           ...prev[stone],
           origins: updatedOrigins
+        }
+      };
+    });
+  };
+
+  // Toggle holding method for side stones (used in Center Stone and Side Stone sections)
+  const toggleSideStoneHoldingMethod = (stone: string, methodId: string) => {
+    setSideStonesData((prev) => {
+      const currentMethods = prev[stone]?.holdingMethods || [];
+      const updatedMethods = currentMethods.includes(methodId)
+        ? currentMethods.filter((m) => m !== methodId)
+        : [...currentMethods, methodId];
+
+      return {
+        ...prev,
+        [stone]: {
+          ...prev[stone],
+          holdingMethods: updatedMethods
+        }
+      };
+    });
+  };
+
+  // Toggle holding method for stone details form
+  const toggleStoneDetailHoldingMethod = (stone: string, methodId: string) => {
+    setStoneDetailsData((prev) => {
+      const currentMethods = prev[stone]?.holdingMethods || [];
+      const updatedMethods = currentMethods.includes(methodId)
+        ? currentMethods.filter((m) => m !== methodId)
+        : [...currentMethods, methodId];
+
+      return {
+        ...prev,
+        [stone]: {
+          ...prev[stone],
+          holdingMethods: updatedMethods
         }
       };
     });
@@ -830,7 +871,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     // Reset new fields
     setSettingConfigurations("");
     setShankConfigurations("");
-    setHoldingMethods("");
     setBandProfileShapes("");
     setBandWidthCategories("");
     setBandFits("");
@@ -862,6 +902,61 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     setStoneDetailsCertified("No");
     setStoneDetailsColor("");
     setSelectedDesignStyles([]);
+  };
+
+  // Handle CSV import
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      toast.error("Please select a CSV file");
+      return;
+    }
+
+    // Validate file type
+    if (!csvFile.name.endsWith('.csv')) {
+      toast.error("Please select a valid CSV file");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("csv", csvFile);
+
+      const result = await importRingProducts(formData).unwrap();
+      
+      if (result.success) {
+        const data = result.data as any;
+        toast.success(
+          `CSV import completed! Created: ${data.created}, Skipped: ${data.skipped}, Errors: ${data.errors}`
+        );
+        
+        // Show detailed results
+        if (data.error_details && data.error_details.length > 0) {
+          console.error("Import errors:", data.error_details);
+          toast.error(`Some rows had errors. Check console for details.`);
+        }
+        
+        setCsvFile(null);
+        // Reset file input
+        const fileInput = document.getElementById('csv-file-input') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+        
+        handleClose();
+        if (onSuccess) onSuccess();
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to import CSV");
+      console.error("Error importing CSV:", error);
+    }
+  };
+
+  // Handle CSV file selection
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCsvFile(file);
+    }
   };
 
   // Handle form submission
@@ -898,10 +993,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     }
     if (!shankConfigurations) {
       toast.error("Please select Shank Configurations");
-      return;
-    }
-    if (!holdingMethods) {
-      toast.error("Please select Holding Methods");
       return;
     }
     if (!bandProfileShapes) {
@@ -1049,7 +1140,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             average_color: stoneData.avgColor || '',
             average_clarity: stoneData.avgClarity || '',
             dimensions: stoneData.dimensions || '',
-            gemstone_type: stoneData.gemstoneType || ''
+            gemstone_type: stoneData.gemstoneType || '',
+            holding_methods: stoneData.holdingMethods || []
           };
         });
 
@@ -1080,7 +1172,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             average_color: stoneData.avgColor || '',
             average_clarity: stoneData.avgClarity || '',
             dimensions: stoneData.dimensions || '',
-            gemstone_type: stoneData.gemstoneType || ''
+            gemstone_type: stoneData.gemstoneType || '',
+            holding_methods: stoneData.holdingMethods || []
           };
         });
 
@@ -1103,7 +1196,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             average_color: stoneData.avgColor || '',
             average_clarity: stoneData.avgClarity || '',
             dimensions: stoneData.dimensions || '',
-            gemstone_type: stoneData.gemstoneType || ''
+            gemstone_type: stoneData.gemstoneType || '',
+            holding_methods: stoneData.holdingMethods || []
           };
         });
 
@@ -1160,9 +1254,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       }
       if (shankConfigurations) {
         formData.append("shankConfigurations", shankConfigurations);
-      }
-      if (holdingMethods) {
-        formData.append("holdingMethods", holdingMethods);
       }
       if (bandProfileShapes) {
         formData.append("bandProfileShapes", bandProfileShapes);
@@ -2313,28 +2404,6 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             </div>
 
             <div className="mb-3">
-              <label className="form-label text-black">Holding Methods *</label>
-              <div>
-                {holdingMethodsData?.data?.map((item) => (
-                  <div className="form-check form-check-inline" key={item._id}>
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="holdingMethods"
-                      id={`holdingMethod-${item._id}`}
-                      value={item._id}
-                      checked={holdingMethods === item._id}
-                      onChange={(e) => setHoldingMethods(e.target.value)}
-                    />
-                    <label className="form-check-label text-black" htmlFor={`holdingMethod-${item._id}`}>
-                      {item.displayName}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-3">
               <label className="form-label text-black">Band Profile Shapes *</label>
               <div>
                 {bandProfileShapesData?.data?.map((item) => (
@@ -2942,6 +3011,28 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                             onChange={(e) => updateSideStoneData(stone, "avgClarity", e.target.value)}
                           />
                         </div>
+
+                        {/* Holding Methods */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Holding Methods</label>
+                          <div className="d-flex flex-wrap gap-2">
+                            {holdingMethodsData?.data?.map((item) => (
+                              <div className="form-check form-check-inline" key={item._id}>
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`cs-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}
+                                  value={item._id}
+                                  checked={(sideStonesData[stone]?.holdingMethods || []).includes(item._id)}
+                                  onChange={() => toggleSideStoneHoldingMethod(stone, item._id)}
+                                />
+                                <label className="form-check-label text-black" htmlFor={`cs-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}>
+                                  {item.displayName}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -3267,6 +3358,28 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           onChange={(e) => updateSideStoneData(stone, "avgClarity", e.target.value)}
                         />
                       </div>
+
+                      {/* Holding Methods */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Holding Methods</label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {holdingMethodsData?.data?.map((item) => (
+                            <div className="form-check form-check-inline" key={item._id}>
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id={`ss-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}
+                                value={item._id}
+                                checked={(sideStonesData[stone]?.holdingMethods || []).includes(item._id)}
+                                onChange={() => toggleSideStoneHoldingMethod(stone, item._id)}
+                              />
+                              <label className="form-check-label text-black" htmlFor={`ss-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}>
+                                {item.displayName}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -3546,6 +3659,28 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           onChange={(e) => updateStoneDetailData(stone, "avgClarity", e.target.value)}
                         />
                       </div>
+
+                      {/* Holding Methods */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Holding Methods</label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {holdingMethodsData?.data?.map((item) => (
+                            <div className="form-check form-check-inline" key={item._id}>
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id={`sd-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}
+                                value={item._id}
+                                checked={(stoneDetailsData[stone]?.holdingMethods || []).includes(item._id)}
+                                onChange={() => toggleStoneDetailHoldingMethod(stone, item._id)}
+                              />
+                              <label className="form-check-label text-black" htmlFor={`sd-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}>
+                                {item.displayName}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -3644,13 +3779,52 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
 
 
 
-            <button
-              className="btn w-100 mt-3 submit-background"
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? "Submitting..." : "Submit"}
-            </button>
+            <div className="d-flex gap-2 mt-3">
+              <button
+                className="btn w-100 submit-background"
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? "Submitting..." : "Submit"}
+              </button>
+              
+              <div className="w-100">
+                <input
+                  type="file"
+                  id="csv-file-input"
+                  accept=".csv"
+                  onChange={handleCsvFileChange}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  className="btn w-100"
+                  type="button"
+                  onClick={() => document.getElementById('csv-file-input')?.click()}
+                  style={{ 
+                    backgroundColor: '#6f42c1', 
+                    color: 'white',
+                    border: 'none'
+                  }}
+                >
+                  {csvFile ? `Selected: ${csvFile.name}` : "+Import CSV"}
+                </button>
+                {csvFile && (
+                  <button
+                    className="btn w-100 mt-2"
+                    type="button"
+                    onClick={handleCsvImport}
+                    disabled={isImporting}
+                    style={{ 
+                      backgroundColor: '#28a745', 
+                      color: 'white',
+                      border: 'none'
+                    }}
+                  >
+                    {isImporting ? "Importing..." : "Upload CSV"}
+                  </button>
+                )}
+              </div>
+            </div>
           </form>
         </div>
       </Modal.Body>

@@ -122,7 +122,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   // Radio button fields (single select)
   const [settingConfigurations, setSettingConfigurations] = useState<string>("");
   const [shankConfigurations, setShankConfigurations] = useState<string>("");
-  const [holdingMethods, setHoldingMethods] = useState<string>("");
   const [bandProfileShapes, setBandProfileShapes] = useState<string>("");
   const [bandWidthCategories, setBandWidthCategories] = useState<string>("");
   const [bandFits, setBandFits] = useState<string[]>([]);
@@ -172,6 +171,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     avgColor: string;
     avgClarity: string;
     minDiamondWeight: string;
+    holdingMethods: string[];
   }>>({});
 
   // Stone Details Form Fields
@@ -187,6 +187,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     avgColor: string;
     avgClarity: string;
     minDiamondWeight: string;
+    holdingMethods: string[];
   }>>({});
   const [stoneDetailsCertified, setStoneDetailsCertified] = useState<string>("No");
   const [stoneDetailsColor, setStoneDetailsColor] = useState<string>("");
@@ -640,7 +641,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       } else {
         setSideStonesData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "" }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -690,7 +691,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       } else {
         setStoneDetailsData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "" }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -719,6 +720,42 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
         [stone]: {
           ...prev[stone],
           origins: updatedOrigins
+        }
+      };
+    });
+  };
+
+  // Toggle holding method for side stones (used in Center Stone and Side Stone sections)
+  const toggleSideStoneHoldingMethod = (stone: string, methodId: string) => {
+    setSideStonesData((prev) => {
+      const currentMethods = prev[stone]?.holdingMethods || [];
+      const updatedMethods = currentMethods.includes(methodId)
+        ? currentMethods.filter((m) => m !== methodId)
+        : [...currentMethods, methodId];
+
+      return {
+        ...prev,
+        [stone]: {
+          ...prev[stone],
+          holdingMethods: updatedMethods
+        }
+      };
+    });
+  };
+
+  // Toggle holding method for stone details form
+  const toggleStoneDetailHoldingMethod = (stone: string, methodId: string) => {
+    setStoneDetailsData((prev) => {
+      const currentMethods = prev[stone]?.holdingMethods || [];
+      const updatedMethods = currentMethods.includes(methodId)
+        ? currentMethods.filter((m) => m !== methodId)
+        : [...currentMethods, methodId];
+
+      return {
+        ...prev,
+        [stone]: {
+          ...prev[stone],
+          holdingMethods: updatedMethods
         }
       };
     });
@@ -869,7 +906,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     // Reset new fields
     setSettingConfigurations("");
     setShankConfigurations("");
-    setHoldingMethods("");
     setBandProfileShapes("");
     setBandWidthCategories("");
     setBandFits([]);
@@ -942,10 +978,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     }
     if (!shankConfigurations) {
       toast.error("Please select Shank Configurations");
-      return;
-    }
-    if (!holdingMethods) {
-      toast.error("Please select Setting Type");
       return;
     }
     // Band Profile Shapes is optional for necklaces - removed validation
@@ -1173,9 +1205,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       }
       if (shankConfigurations) {
         formData.append("shankConfigurations", shankConfigurations);
-      }
-      if (holdingMethods) {
-        formData.append("holdingMethods", holdingMethods);
       }
       if (styleSubCategory) {
         formData.append("styleSubCategory", styleSubCategory);
@@ -2404,27 +2433,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               </div>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label text-black">Setting Type (HoldingMethod linked) *</label>
-              <div>
-                {holdingMethodsData?.data?.map((item) => (
-                  <div className="form-check form-check-inline" key={item._id}>
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="holdingMethods"
-                      id={`holdingMethod-${item._id}`}
-                      value={item._id}
-                      checked={holdingMethods === item._id}
-                      onChange={(e) => setHoldingMethods(e.target.value)}
-                    />
-                    <label className="form-check-label text-black" htmlFor={`holdingMethod-${item._id}`}>
-                      {item.displayName}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             <div className="mb-3">
               <label className="form-label text-black">Lock (ClosureType linked)</label>
@@ -3088,6 +3096,28 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                             onChange={(e) => updateSideStoneData(stone, "avgClarity", e.target.value)}
                           />
                         </div>
+
+                        {/* Holding Methods */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Holding Methods</label>
+                          <div className="d-flex flex-wrap gap-2">
+                            {holdingMethodsData?.data?.map((item) => (
+                              <div className="form-check form-check-inline" key={item._id}>
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`cs-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}
+                                  value={item._id}
+                                  checked={(sideStonesData[stone]?.holdingMethods || []).includes(item._id)}
+                                  onChange={() => toggleSideStoneHoldingMethod(stone, item._id)}
+                                />
+                                <label className="form-check-label text-black" htmlFor={`cs-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}>
+                                  {item.displayName}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -3498,6 +3528,28 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                           onChange={(e) => updateSideStoneData(stone, "avgClarity", e.target.value)}
                         />
                       </div>
+
+                      {/* Holding Methods */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Holding Methods</label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {holdingMethodsData?.data?.map((item) => (
+                            <div className="form-check form-check-inline" key={item._id}>
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id={`ss-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}
+                                value={item._id}
+                                checked={(sideStonesData[stone]?.holdingMethods || []).includes(item._id)}
+                                onChange={() => toggleSideStoneHoldingMethod(stone, item._id)}
+                              />
+                              <label className="form-check-label text-black" htmlFor={`ss-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}>
+                                {item.displayName}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -3776,6 +3828,28 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                           value={stoneDetailsData[stone]?.avgClarity || ""}
                           onChange={(e) => updateStoneDetailData(stone, "avgClarity", e.target.value)}
                         />
+                      </div>
+
+                      {/* Holding Methods */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Holding Methods</label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {holdingMethodsData?.data?.map((item) => (
+                            <div className="form-check form-check-inline" key={item._id}>
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id={`sd-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}
+                                value={item._id}
+                                checked={(stoneDetailsData[stone]?.holdingMethods || []).includes(item._id)}
+                                onChange={() => toggleStoneDetailHoldingMethod(stone, item._id)}
+                              />
+                              <label className="form-check-label text-black" htmlFor={`sd-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}>
+                                {item.displayName}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ))}
