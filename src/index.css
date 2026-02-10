@@ -2998,3 +2998,8 @@ div[class*="w-64"] nav a:not(.active):not([class*="bg-gradient"]) svg {
   background-color: red;
   
 }
+
+.filter-item-checked{
+  background: red;
+  color: white;
+}

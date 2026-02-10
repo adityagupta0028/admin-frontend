@@ -20,11 +20,26 @@ import {
   useGetBandProfileShapesQuery,
   useGetBandWidthCategoriesQuery,
   useGetBandFitsQuery,
+  useGetFlexibilityTypesQuery,
+  useGetProductSpecialsQuery,
+  useGetCollectionsQuery,
+  useGetChainLinkTypesQuery,
+  useGetClosureTypesQuery,
+  useGetStoneSettingsQuery,
+  useGetPlacementFitsQuery,
   useGetShankTreatmentsQuery,
   useGetStylesQuery,
   useGetSettingFeaturesQuery,
   useGetMotifThemesQuery,
   useGetOrnamentDetailsQuery,
+  useGetAccentStoneShapesQuery,
+  useGetAssemblyTypesQuery,
+  useGetChainTypesQuery,
+  useGetFinishDetailsQuery,
+  useGetUnitOfSalesQuery,
+  useGetDropShapesQuery,
+  useGetAttachmentTypesQuery,
+  useGetEarringOrientationsQuery,
   ProductAttribute
 } from "../../store/api/productAttributesApi";
 import {
@@ -88,11 +103,26 @@ const filterTypes: FilterTypeConfig[] = [
   { key: "bandProfileShapes", label: "Band Profile Shapes" },
   { key: "bandWidthCategories", label: "Band Width Categories" },
   { key: "bandFits", label: "Band Fits" },
+  { key: "flexibilityTypes", label: "Flexibility Types" },
+  { key: "productSpecials", label: "Product Specials" },
+  { key: "collections", label: "Collections" },
+  { key: "chainLinkTypes", label: "Chain Link Types" },
+  { key: "closureTypes", label: "Closure Types" },
+  { key: "stoneSettings", label: "Stone Settings" },
+  { key: "placementFits", label: "Placement Fits" },
   { key: "shankTreatments", label: "Shank Treatments" },
   { key: "styles", label: "Styles" },
   { key: "settingFeatures", label: "Setting Features" },
   { key: "motifThemes", label: "Motif Themes" },
   { key: "ornamentDetails", label: "Ornament Details" },
+  { key: "accentStoneShapes", label: "Accent Stone Shapes" },
+  { key: "assemblyTypes", label: "Assembly Types" },
+  { key: "chainTypes", label: "Chain Types" },
+  { key: "finishDetails", label: "Finish Details" },
+  { key: "unitOfSales", label: "Unit Of Sales" },
+  { key: "dropShapes", label: "Drop Shapes" },
+  { key: "attachmentTypes", label: "Attachment Types" },
+  { key: "earringOrientations", label: "Earring Orientations" },
 ];
 
 export function FilterManagement() {
@@ -107,11 +137,26 @@ export function FilterManagement() {
   const { data: bandProfileShapesResponse, refetch: refetchBandProfileShapes } = useGetBandProfileShapesQuery();
   const { data: bandWidthCategoriesResponse, refetch: refetchBandWidthCategories } = useGetBandWidthCategoriesQuery();
   const { data: bandFitsResponse, refetch: refetchBandFits } = useGetBandFitsQuery();
+  const { data: flexibilityTypesResponse, refetch: refetchFlexibilityTypes } = useGetFlexibilityTypesQuery();
+  const { data: productSpecialsResponse, refetch: refetchProductSpecials } = useGetProductSpecialsQuery();
+  const { data: collectionsResponse, refetch: refetchCollections } = useGetCollectionsQuery();
+  const { data: chainLinkTypesResponse, refetch: refetchChainLinkTypes } = useGetChainLinkTypesQuery();
+  const { data: closureTypesResponse, refetch: refetchClosureTypes } = useGetClosureTypesQuery();
+  const { data: stoneSettingsResponse, refetch: refetchStoneSettings } = useGetStoneSettingsQuery();
+  const { data: placementFitsResponse, refetch: refetchPlacementFits } = useGetPlacementFitsQuery();
   const { data: shankTreatmentsResponse, refetch: refetchShankTreatments } = useGetShankTreatmentsQuery();
   const { data: stylesResponse, refetch: refetchStyles } = useGetStylesQuery();
   const { data: settingFeaturesResponse, refetch: refetchSettingFeatures } = useGetSettingFeaturesQuery();
   const { data: motifThemesResponse, refetch: refetchMotifThemes } = useGetMotifThemesQuery();
   const { data: ornamentDetailsResponse, refetch: refetchOrnamentDetails } = useGetOrnamentDetailsQuery();
+  const { data: accentStoneShapesResponse, refetch: refetchAccentStoneShapes } = useGetAccentStoneShapesQuery();
+  const { data: assemblyTypesResponse, refetch: refetchAssemblyTypes } = useGetAssemblyTypesQuery();
+  const { data: chainTypesResponse, refetch: refetchChainTypes } = useGetChainTypesQuery();
+  const { data: finishDetailsResponse, refetch: refetchFinishDetails } = useGetFinishDetailsQuery();
+  const { data: unitOfSalesResponse, refetch: refetchUnitOfSales } = useGetUnitOfSalesQuery();
+  const { data: dropShapesResponse, refetch: refetchDropShapes } = useGetDropShapesQuery();
+  const { data: attachmentTypesResponse, refetch: refetchAttachmentTypes } = useGetAttachmentTypesQuery();
+  const { data: earringOrientationsResponse, refetch: refetchEarringOrientations } = useGetEarringOrientationsQuery();
   
   const filters = (filterResponse?.data as FilterVisibility[]) || [];
   
@@ -123,11 +168,26 @@ export function FilterManagement() {
     bandProfileShapes: (bandProfileShapesResponse?.data as ProductAttribute[]) || [],
     bandWidthCategories: (bandWidthCategoriesResponse?.data as ProductAttribute[]) || [],
     bandFits: (bandFitsResponse?.data as ProductAttribute[]) || [],
+    flexibilityTypes: (flexibilityTypesResponse?.data as ProductAttribute[]) || [],
+    productSpecials: (productSpecialsResponse?.data as ProductAttribute[]) || [],
+    collections: (collectionsResponse?.data as ProductAttribute[]) || [],
+    chainLinkTypes: (chainLinkTypesResponse?.data as ProductAttribute[]) || [],
+    closureTypes: (closureTypesResponse?.data as ProductAttribute[]) || [],
+    stoneSettings: (stoneSettingsResponse?.data as ProductAttribute[]) || [],
+    placementFits: (placementFitsResponse?.data as ProductAttribute[]) || [],
     shankTreatments: (shankTreatmentsResponse?.data as ProductAttribute[]) || [],
     styles: (stylesResponse?.data as ProductAttribute[]) || [],
     settingFeatures: (settingFeaturesResponse?.data as ProductAttribute[]) || [],
     motifThemes: (motifThemesResponse?.data as ProductAttribute[]) || [],
     ornamentDetails: (ornamentDetailsResponse?.data as ProductAttribute[]) || [],
+    accentStoneShapes: (accentStoneShapesResponse?.data as ProductAttribute[]) || [],
+    assemblyTypes: (assemblyTypesResponse?.data as ProductAttribute[]) || [],
+    chainTypes: (chainTypesResponse?.data as ProductAttribute[]) || [],
+    finishDetails: (finishDetailsResponse?.data as ProductAttribute[]) || [],
+    unitOfSales: (unitOfSalesResponse?.data as ProductAttribute[]) || [],
+    dropShapes: (dropShapesResponse?.data as ProductAttribute[]) || [],
+    attachmentTypes: (attachmentTypesResponse?.data as ProductAttribute[]) || [],
+    earringOrientations: (earringOrientationsResponse?.data as ProductAttribute[]) || [],
   };
   
   const [localFilters, setLocalFilters] = useState<FilterVisibility[]>([]);
@@ -141,11 +201,26 @@ export function FilterManagement() {
     bandProfileShapes: new Set(),
     bandWidthCategories: new Set(),
     bandFits: new Set(),
+    flexibilityTypes: new Set(),
+    productSpecials: new Set(),
+    collections: new Set(),
+    chainLinkTypes: new Set(),
+    closureTypes: new Set(),
+    stoneSettings: new Set(),
+    placementFits: new Set(),
     shankTreatments: new Set(),
     styles: new Set(),
     settingFeatures: new Set(),
     motifThemes: new Set(),
     ornamentDetails: new Set(),
+    accentStoneShapes: new Set(),
+    assemblyTypes: new Set(),
+    chainTypes: new Set(),
+    finishDetails: new Set(),
+    unitOfSales: new Set(),
+    dropShapes: new Set(),
+    attachmentTypes: new Set(),
+    earringOrientations: new Set(),
   });
 
   // Hero Menu state
@@ -243,11 +318,26 @@ export function FilterManagement() {
       refetchBandProfileShapes();
       refetchBandWidthCategories();
       refetchBandFits();
+      refetchFlexibilityTypes();
+      refetchProductSpecials();
+      refetchCollections();
+      refetchChainLinkTypes();
+      refetchClosureTypes();
+      refetchStoneSettings();
+      refetchPlacementFits();
       refetchShankTreatments();
       refetchStyles();
       refetchSettingFeatures();
       refetchMotifThemes();
       refetchOrnamentDetails();
+      refetchAccentStoneShapes();
+      refetchAssemblyTypes();
+      refetchChainTypes();
+      refetchFinishDetails();
+      refetchUnitOfSales();
+      refetchDropShapes();
+      refetchAttachmentTypes();
+      refetchEarringOrientations();
       refetchMenuFilterSettings();
     }
   }, [selectedMenuItem, activeMenuTab, refetchSettingConfigurations, refetchShankConfigurations, refetchHoldingMethods, refetchBandProfileShapes, refetchBandWidthCategories, refetchBandFits, refetchShankTreatments, refetchStyles, refetchSettingFeatures, refetchMotifThemes, refetchOrnamentDetails, refetchMenuFilterSettings]);
@@ -263,16 +353,33 @@ export function FilterManagement() {
         bandProfileShapes: new Set(),
         bandWidthCategories: new Set(),
         bandFits: new Set(),
+        flexibilityTypes: new Set(),
+        productSpecials: new Set(),
+        collections: new Set(),
+        chainLinkTypes: new Set(),
+        closureTypes: new Set(),
+        stoneSettings: new Set(),
+        placementFits: new Set(),
         shankTreatments: new Set(),
         styles: new Set(),
         settingFeatures: new Set(),
         motifThemes: new Set(),
         ornamentDetails: new Set(),
+        accentStoneShapes: new Set(),
+        assemblyTypes: new Set(),
+        chainTypes: new Set(),
+        finishDetails: new Set(),
+        unitOfSales: new Set(),
+        dropShapes: new Set(),
+        attachmentTypes: new Set(),
+        earringOrientations: new Set(),
       };
 
       savedSettings.forEach((setting) => {
         if (setting.itemKey && setting.items && Array.isArray(setting.items)) {
-          newSelectedFilters[setting.itemKey] = new Set(setting.items.map((id: string) => id.toString()));
+          newSelectedFilters[setting.itemKey] = new Set(
+            setting.items.map((id: string) => id.toString())
+          );
         }
       });
 
@@ -696,11 +803,26 @@ export function FilterManagement() {
                   bandProfileShapes: new Set(),
                   bandWidthCategories: new Set(),
                   bandFits: new Set(),
+                  flexibilityTypes: new Set(),
+                  productSpecials: new Set(),
+                  collections: new Set(),
+                  chainLinkTypes: new Set(),
+                  closureTypes: new Set(),
+                  stoneSettings: new Set(),
+                  placementFits: new Set(),
                   shankTreatments: new Set(),
                   styles: new Set(),
                   settingFeatures: new Set(),
                   motifThemes: new Set(),
                   ornamentDetails: new Set(),
+                  accentStoneShapes: new Set(),
+                  assemblyTypes: new Set(),
+                  chainTypes: new Set(),
+                  finishDetails: new Set(),
+                  unitOfSales: new Set(),
+                  dropShapes: new Set(),
+                  attachmentTypes: new Set(),
+                  earringOrientations: new Set(),
                 });
                 setHasChanges(false);
               }}
@@ -729,11 +851,26 @@ export function FilterManagement() {
                   bandProfileShapes: new Set(),
                   bandWidthCategories: new Set(),
                   bandFits: new Set(),
+                  flexibilityTypes: new Set(),
+                  productSpecials: new Set(),
+                  collections: new Set(),
+                  chainLinkTypes: new Set(),
+                  closureTypes: new Set(),
+                  stoneSettings: new Set(),
+                  placementFits: new Set(),
                   shankTreatments: new Set(),
                   styles: new Set(),
                   settingFeatures: new Set(),
                   motifThemes: new Set(),
                   ornamentDetails: new Set(),
+                  accentStoneShapes: new Set(),
+                  assemblyTypes: new Set(),
+                  chainTypes: new Set(),
+                  finishDetails: new Set(),
+                  unitOfSales: new Set(),
+                  dropShapes: new Set(),
+                  attachmentTypes: new Set(),
+                  earringOrientations: new Set(),
                 });
                 setHasChanges(false);
               }}
@@ -764,11 +901,26 @@ export function FilterManagement() {
                   bandProfileShapes: new Set(),
                   bandWidthCategories: new Set(),
                   bandFits: new Set(),
+                  flexibilityTypes: new Set(),
+                  productSpecials: new Set(),
+                  collections: new Set(),
+                  chainLinkTypes: new Set(),
+                  closureTypes: new Set(),
+                  stoneSettings: new Set(),
+                  placementFits: new Set(),
                   shankTreatments: new Set(),
                   styles: new Set(),
                   settingFeatures: new Set(),
                   motifThemes: new Set(),
                   ornamentDetails: new Set(),
+                  accentStoneShapes: new Set(),
+                  assemblyTypes: new Set(),
+                  chainTypes: new Set(),
+                  finishDetails: new Set(),
+                  unitOfSales: new Set(),
+                  dropShapes: new Set(),
+                  attachmentTypes: new Set(),
+                  earringOrientations: new Set(),
                 });
                 setHasChanges(false);
                 setHeroMenuHasChanges(false);
@@ -943,13 +1095,13 @@ export function FilterManagement() {
                               return (
                                 <div key={filterType.key} className="space-y-4">
                                   <div className="mb-2">
-                                    <p className="text-sm text-gray-600 font-medium">{filterType.label}</p>
+                                    <p className="text-sm text-gray-600 font-medium jjj">{filterType.label}</p>
                                   </div>
                                   <div className="grid grid-cols-2 gap-6">
                                     {/* Left Column */}
                                     <div className="space-y-3">
                                       {left.map((item) => (
-                                        <div key={item._id} className="flex items-center space-x-4">
+                                        <div key={item._id} className="flex items-center space-x-4 hhhh">
                                           <Checkbox
                                             id={`${filterType.key}-${activeColumnTab}-${headerIndex}-${item._id}`}
                                             checked={isHeroMenuVariableSelected(
@@ -966,7 +1118,7 @@ export function FilterManagement() {
                                                 item._id
                                               )
                                             }
-                                            className="w-5 h-5 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white"
+                                            className="ali  w-5 h-5 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white"
                                           />
                                           <Label
                                             htmlFor={`${filterType.key}-${activeColumnTab}-${headerIndex}-${item._id}`}
@@ -1124,7 +1276,8 @@ export function FilterManagement() {
             <div className="space-y-8">
               {filterTypes.map((filterType) => {
                 const items = filterData[filterType.key as keyof typeof filterData];
-                const selectedItems = selectedFilters[filterType.key];
+                const selectedItems =
+                  selectedFilters[filterType.key] || new Set<string>();
                 const { left, right } = splitIntoColumns(items);
 
                 if (items.length === 0) return null;
@@ -1132,47 +1285,57 @@ export function FilterManagement() {
                 return (
                   <div key={filterType.key} className="space-y-4">
                     <div className="mb-2">
-                      <p className="text-sm text-gray-600 font-medium">{filterType.label}</p>
+                      <p className="text-sm text-gray-600 font-medium aaaa">{filterType.label}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-6">
                       {/* Left Column */}
                       <div className="space-y-3">
-                        {left.map((item) => (
-                          <div key={item._id} className="flex items-center space-x-4">
-                            <Checkbox
-                              id={`${filterType.key}-${item._id}`}
-                              checked={selectedItems.has(item._id)}
-                              onCheckedChange={() => handleToggleFilterItem(filterType.key, item._id)}
-                              className="w-5 h-5 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white"
-                            />
-                            <Label
-                              htmlFor={`${filterType.key}-${item._id}`}
-                              className="text-base font-normal cursor-pointer flex-1"
-                            >
-                              {item.displayName || item.code}
-                            </Label>
-                          </div>
-                        ))}
+                        {left.map((item) => {
+                          const isChecked = selectedItems.has(item._id);
+                          return (
+                            <div key={item._id} className="flex items-center space-x-4">
+                              <Checkbox
+                                id={`${filterType.key}-${item._id}`}
+                                checked={isChecked}
+                                onCheckedChange={() => handleToggleFilterItem(filterType.key, item._id)}
+                                className={`w-5 h-5 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white ${
+                                  isChecked ? "filter-item-checked" : ""
+                                }`}
+                              />
+                              <Label
+                                htmlFor={`${filterType.key}-${item._id}`}
+                                className="text-base font-normal cursor-pointer flex-1"
+                              >
+                                {item.displayName || item.code}
+                              </Label>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {/* Right Column */}
                       <div className="space-y-3">
-                        {right.map((item) => (
-                          <div key={item._id} className="flex items-center space-x-4">
-                            <Checkbox
-                              id={`${filterType.key}-${item._id}`}
-                              checked={selectedItems.has(item._id)}
-                              onCheckedChange={() => handleToggleFilterItem(filterType.key, item._id)}
-                              className="w-5 h-5 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white"
-                            />
-                            <Label
-                              htmlFor={`${filterType.key}-${item._id}`}
-                              className="text-base font-normal cursor-pointer flex-1"
-                            >
-                              {item.displayName || item.code}
-                            </Label>
-                          </div>
-                        ))}
+                        {right.map((item) => {
+                          const isChecked = selectedItems.has(item._id);
+                          return (
+                            <div key={item._id} className="flex items-center space-x-4">
+                              <Checkbox
+                                id={`${filterType.key}-${item._id}`}
+                                checked={isChecked}
+                                onCheckedChange={() => handleToggleFilterItem(filterType.key, item._id)}
+                                className={`w-5 h-5 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white ${
+                                  isChecked ? "filter-item-checked" : ""
+                                }`}
+                              />
+                              <Label
+                                htmlFor={`${filterType.key}-${item._id}`}
+                                className="text-base font-normal cursor-pointer flex-1"
+                              >
+                                {item.displayName || item.code}
+                              </Label>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                     {filterType.key !== filterTypes[filterTypes.length - 1].key && (
@@ -1215,11 +1378,26 @@ export function FilterManagement() {
                           bandProfileShapes: new Set(),
                           bandWidthCategories: new Set(),
                           bandFits: new Set(),
+                          flexibilityTypes: new Set(),
+                          productSpecials: new Set(),
+                          collections: new Set(),
+                          chainLinkTypes: new Set(),
+                          closureTypes: new Set(),
+                          stoneSettings: new Set(),
+                          placementFits: new Set(),
                           shankTreatments: new Set(),
                           styles: new Set(),
                           settingFeatures: new Set(),
                           motifThemes: new Set(),
                           ornamentDetails: new Set(),
+                          accentStoneShapes: new Set(),
+                          assemblyTypes: new Set(),
+                          chainTypes: new Set(),
+                          finishDetails: new Set(),
+                          unitOfSales: new Set(),
+                          dropShapes: new Set(),
+                          attachmentTypes: new Set(),
+                          earringOrientations: new Set(),
                         };
 
                         savedSettings.forEach((setting) => {
@@ -1238,11 +1416,26 @@ export function FilterManagement() {
                           bandProfileShapes: new Set(),
                           bandWidthCategories: new Set(),
                           bandFits: new Set(),
+                          flexibilityTypes: new Set(),
+                          productSpecials: new Set(),
+                          collections: new Set(),
+                          chainLinkTypes: new Set(),
+                          closureTypes: new Set(),
+                          stoneSettings: new Set(),
+                          placementFits: new Set(),
                           shankTreatments: new Set(),
                           styles: new Set(),
                           settingFeatures: new Set(),
                           motifThemes: new Set(),
                           ornamentDetails: new Set(),
+                          accentStoneShapes: new Set(),
+                          assemblyTypes: new Set(),
+                          chainTypes: new Set(),
+                          finishDetails: new Set(),
+                          unitOfSales: new Set(),
+                          dropShapes: new Set(),
+                          attachmentTypes: new Set(),
+                          earringOrientations: new Set(),
                         });
                       }
                       setHasChanges(false);
