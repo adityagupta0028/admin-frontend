@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Modal from "react-bootstrap/Modal";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useCreateProductMutation, useImportRingProductsMutation } from "../../store/api/productApi";
+import { useCreateProductMutation, useImportRingProductsMutation, useImportRingVariantsMutation } from "../../store/api/productApi";
 import {
   useGetSettingConfigurationsQuery,
   useGetShankConfigurationsQuery,
@@ -202,9 +202,11 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
   // Loading state
   const [createProduct, { isLoading }] = useCreateProductMutation();
   const [importRingProducts, { isLoading: isImporting }] = useImportRingProductsMutation();
+  const [importRingVariants, { isLoading: isImportingVariants }] = useImportRingVariantsMutation();
   
   // CSV Import state
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [variantCsvFile, setVariantCsvFile] = useState<File | null>(null);
 
   // Fetch product attributes
   const { data: settingConfigurationsData } = useGetSettingConfigurationsQuery();
@@ -934,6 +936,56 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
           console.error("Import errors:", data.error_details);
           toast.error(`Some rows had errors. Check console for details.`);
         }
+
+        // Auto-download variants CSV after successful import
+        try {
+          const apiBase =
+            (import.meta.env.VITE_API_URL || "http://localhost:8081/api/v1") +
+            "/api/v1";
+          const token = localStorage.getItem("token") || "";
+
+          // Collect created product MongoDB _ids if available
+          const createdProducts = Array.isArray(data?.created_products)
+            ? data.created_products
+            : [];
+          const createdIds = createdProducts
+            .map((p: any) => p?._id)
+            .filter((id: string | undefined) => !!id);
+
+          const queryParam =
+            createdIds.length > 0
+              ? `?productIds=${encodeURIComponent(createdIds.join(","))}`
+              : "";
+
+          const response = await fetch(
+            `${apiBase}/Admin/export-ring-variants${queryParam}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: token ? `Bearer ${token}` : "",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to download variants CSV`);
+          }
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "ring_variants.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        } catch (downloadError) {
+          console.error("Error downloading variants CSV:", downloadError);
+          toast.error(
+            "Products imported, but failed to download variants CSV. Please try again."
+          );
+        }
         
         setCsvFile(null);
         // Reset file input
@@ -956,6 +1008,57 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     const file = e.target.files?.[0];
     if (file) {
       setCsvFile(file);
+    }
+  };
+
+  // Handle Variants CSV file selection
+  const handleVariantCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVariantCsvFile(file);
+    }
+  };
+
+  // Handle Variants CSV import (update variant prices)
+  const handleVariantCsvImport = async () => {
+    if (!variantCsvFile) {
+      toast.error("Please select a Variants CSV file");
+      return;
+    }
+
+    if (!variantCsvFile.name.endsWith(".csv")) {
+      toast.error("Please select a valid CSV file for variants");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("csv", variantCsvFile);
+
+      const result = await importRingVariants(formData).unwrap();
+      const data = result.data as any;
+
+      toast.success(
+        `Variants updated! Rows: ${data.processed_rows}, Updated variants: ${data.updated_variants}, Errors: ${data.errors}`
+      );
+
+      if (data.error_details && data.error_details.length > 0) {
+        console.error("Variant import errors:", data.error_details);
+        toast.error("Some variant rows had errors. Check console for details.");
+      }
+
+      setVariantCsvFile(null);
+      const fileInput = document.getElementById(
+        "variant-csv-file-input"
+      ) as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = "";
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.data?.message || "Failed to import variants CSV and update prices"
+      );
+      console.error("Error importing variants CSV:", error);
     }
   };
 
@@ -3821,6 +3924,48 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                     }}
                   >
                     {isImporting ? "Importing..." : "Upload CSV"}
+                  </button>
+                )}
+              </div>
+              <div className="w-100">
+                <input
+                  type="file"
+                  id="variant-csv-file-input"
+                  accept=".csv"
+                  onChange={handleVariantCsvFileChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="btn w-100"
+                  type="button"
+                  onClick={() =>
+                    document.getElementById("variant-csv-file-input")?.click()
+                  }
+                  style={{
+                    backgroundColor: "#17a2b8",
+                    color: "white",
+                    border: "none",
+                  }}
+                >
+                  {variantCsvFile
+                    ? `Selected: ${variantCsvFile.name}`
+                    : "Import Variants CSV"}
+                </button>
+                {variantCsvFile && (
+                  <button
+                    className="btn w-100 mt-2"
+                    type="button"
+                    onClick={handleVariantCsvImport}
+                    disabled={isImportingVariants}
+                    style={{
+                      backgroundColor: "#138496",
+                      color: "white",
+                      border: "none",
+                    }}
+                  >
+                    {isImportingVariants
+                      ? "Updating Variants..."
+                      : "Upload & Update Variants"}
                   </button>
                 )}
               </div>
