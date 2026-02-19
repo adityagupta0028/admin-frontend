@@ -337,15 +337,47 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     "Round", "Princess", "Cushion", "Oval", "Emerald", "Pear", "Radiant", "Asscher", "Marquise", "Heart"
   ];
 
-  const diamondQualityOptions = [
-    { label: "Best", color: "D", clarity: "VVS", fullLabel: "Best - D, VVS", type: "single" },
-    { label: "Better", color: "E", clarity: "VS1", fullLabel: "Better - E, VS1", type: "single" },
-    { label: "Good", color: "F", clarity: "VS2", fullLabel: "Good - F, VS2", type: "single" },
-    { label: "DQ1", color: "DE", clarity: "CL1", fullLabel: "DQ1 - DE, CL1", type: "double" },
-    { label: "DQ2", color: "EF", clarity: "CL2", fullLabel: "DQ2 - EF, CL2", type: "double" },
-    { label: "DQ3", color: "FG", clarity: "CL3", fullLabel: "DQ3 - FG, CL3", type: "double" },
-    { label: "DQ4", color: "GH", clarity: "CL4", fullLabel: "DQ4 - GH, CL4", type: "double" },
-  ];
+  // Diamond Quality options depend on Diamond Origin + Diamond Grading
+  const diamondQualityMap: Record<string, {
+    label: string;
+    color: string;
+    clarity: string;
+    fullLabel: string;
+    type: "single" | "double";
+  }[]> = {
+    // Lab Grown + Single Letter
+    "lab grown_single": [
+      { label: "Best",   color: "D",  clarity: "VVS+", fullLabel: "Best - D, VVS+",  type: "single" },
+      { label: "Better", color: "E",  clarity: "VS1",  fullLabel: "Better - E, VS1", type: "single" },
+      { label: "Fair",   color: "F",  clarity: "VS2",  fullLabel: "Fair - F, VS2",   type: "single" },
+    ],
+    // Lab Grown + Double Letter
+    "lab grown_double": [
+      { label: "Best",   color: "DE", clarity: "VVS+", fullLabel: "Best - DE, VVS+", type: "double" },
+      { label: "Better", color: "FG", clarity: "VS+",  fullLabel: "Better - FG, VS+",type: "double" },
+      { label: "Fair",   color: "H",  clarity: "SI+",  fullLabel: "Fair - H, SI+",   type: "double" },
+    ],
+    // Natural + Single Letter
+    "natural_single": [
+      { label: "Best",   color: "F",  clarity: "VS2",  fullLabel: "Best - F, VS2",   type: "single" },
+      { label: "Better", color: "G",  clarity: "SI1",  fullLabel: "Better - G, SI1", type: "single" },
+      { label: "Fair",   color: "H",  clarity: "SI2",  fullLabel: "Fair - H, SI2",   type: "single" },
+    ],
+    // Natural + Double Letter
+    "natural_double": [
+      { label: "Best",   color: "EF", clarity: "VVS+", fullLabel: "Best - EF, VVS+", type: "double" },
+      { label: "Better", color: "GH", clarity: "VS+",  fullLabel: "Better - GH, VS+",type: "double" },
+      { label: "Fair",   color: "HI", clarity: "SI+",  fullLabel: "Fair - HI, SI+",  type: "double" },
+    ],
+  };
+
+  const getDiamondQualityOptions = (
+    origin: string,
+    grading: "single" | "double"
+  ) => {
+    const key = `${(origin || "").toLowerCase()}_${grading}`;
+    return diamondQualityMap[key] || [];
+  };
 
   const viewAngleOptions = [
     { id: 1, label: "Angled view", value: "Angled view", required: true },
@@ -2013,10 +2045,9 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                   </div>
                   {diamondQualityDropdownOpen && (
                     <div className="dropdown-list">
-                      {diamondQualityOptions
-                        .filter((option) => option.type === diamondGrading)
-                        .map((quality) => (
-                          <label className="dropdown-item" key={quality.label}>
+                      {getDiamondQualityOptions(diamondOrigin, diamondGrading).map(
+                        (quality) => (
+                          <label className="dropdown-item" key={quality.fullLabel}>
                             <input
                               type="checkbox"
                               value={quality.fullLabel}
@@ -2033,7 +2064,8 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                             />
                             {quality.fullLabel}
                           </label>
-                        ))}
+                        )
+                      )}
                     </div>
                   )}
                 </div>
