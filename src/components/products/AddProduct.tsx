@@ -1763,7 +1763,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             <div className="mb-3">
               <label className="form-label text-black fw-bold">Shape</label>
               <div className="d-flex flex-wrap gap-3">
-                {["Oval", "Circle", "Round", "Heart"].map((shape) => (
+                {diamondShapeStatic.map((shape) => (
                   <div className="form-check" key={shape}>
                     <input
                       className="form-check-input"
