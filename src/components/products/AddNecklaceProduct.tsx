@@ -86,7 +86,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   const [metalViewAngles, setMetalViewAngles] = useState<Record<string, string[]>>({});
 
   // Diamond fields
-  const [diamondOrigin, setDiamondOrigin] = useState<string>("");
+  const [diamondOrigin, setDiamondOrigin] = useState<string[]>([]);
   const [diamondGrading, setDiamondGrading] = useState<"single" | "double">("single");
   const [diamondQualities, setDiamondQualities] = useState<string[]>([]);
   const [diamondDropdownOpen, setDiamondDropdownOpen] = useState(false);
@@ -386,11 +386,29 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   };
 
   const getDiamondQualityOptions = (
-    origin: string,
+    origins: string[],
     grading: "single" | "double"
   ) => {
-    const key = `${(origin || "").toLowerCase()}_${grading}`;
-    return diamondQualityMap[key] || [];
+    // If no origins selected, return empty array
+    if (origins.length === 0) {
+      return [];
+    }
+    // Combine options from all selected origins
+    const allOptions: typeof diamondQualityMap[string] = [];
+    const seenLabels = new Set<string>();
+    
+    origins.forEach(origin => {
+      const key = `${(origin || "").toLowerCase()}_${grading}`;
+      const options = diamondQualityMap[key] || [];
+      options.forEach(option => {
+        if (!seenLabels.has(option.fullLabel)) {
+          seenLabels.add(option.fullLabel);
+          allOptions.push(option);
+        }
+      });
+    });
+    
+    return allOptions;
   };
 
   const viewAngleOptions = [
@@ -467,9 +485,12 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   };
 
   // Select diamond origin (single select)
-  const selectDiamondOrigin = (origin: { value: string }) => {
-    setDiamondOrigin(origin.value);
-    setDiamondDropdownOpen(false);
+  const toggleDiamondOrigin = (origin: { value: string }) => {
+    setDiamondOrigin((prev) =>
+      prev.includes(origin.value)
+        ? prev.filter((o) => o !== origin.value)
+        : [...prev, origin.value]
+    );
   };
 
   // Toggle diamond quality
@@ -915,7 +936,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     setSelectedShapes([]);
     setMetalImages({});
     setMetalViewAngles({});
-    setDiamondOrigin("");
+    setDiamondOrigin([]);
     setDiamondQualities([]);
     setCaratWeights([]);
     setStones([]);
@@ -1097,9 +1118,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       });
 
       // Diamond fields
-      if (diamondOrigin) {
-        formData.append("diamond_origin", diamondOrigin);
-      }
+      diamondOrigin.forEach((origin) => formData.append("diamond_origin", origin));
       diamondQualities.forEach((quality) => formData.append("diamond_quality", quality));
       caratWeights.forEach((weight) => formData.append("carat_weight", weight));
 
@@ -1268,8 +1287,8 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
 
   // Generate all combinations of Stone (diamondOrigin) × Carat × Gold (metalTypes) × Diamond Quality
   const handleGenerateVariants = () => {
-    if (!diamondOrigin) {
-      toast.error("Please select a Stone Type (Diamond Origin)");
+    if (diamondOrigin.length === 0) {
+      toast.error("Please select at least one Stone Type (Diamond Origin)");
       return;
     }
     if (caratWeights.length === 0) {
@@ -1295,18 +1314,20 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
 
     const rows: VariantRow[] = [];
 
-    caratWeights.forEach(carat => {
-      metalTypes.forEach(gold => {
-        diamondQualities.forEach(quality => {
-          selectedShapes.forEach(shape => {
-            rows.push({
-              stone_type: diamondOrigin,
-              carat_weight: `${carat}ct`,
-              gold_type: gold,
-              diamond_quality: quality,
-              shape: shape,
-              price: "",
-              discounted_price: "",
+    diamondOrigin.forEach(origin => {
+      caratWeights.forEach(carat => {
+        metalTypes.forEach(gold => {
+          diamondQualities.forEach(quality => {
+            selectedShapes.forEach(shape => {
+              rows.push({
+                stone_type: origin,
+                carat_weight: `${carat}ct`,
+                gold_type: gold,
+                diamond_quality: quality,
+                shape: shape,
+                price: "",
+                discounted_price: "",
+              });
             });
           });
         });
@@ -1803,11 +1824,8 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                     onClick={() => setDiamondDropdownOpen(!diamondDropdownOpen)}
                   >
                     <span>
-                      {diamondOrigin
-                        ? (() => {
-                          const selected = diamondOriginStatic.find((o) => o.value === diamondOrigin);
-                          return selected ? selected.label : "Select...";
-                        })()
+                      {diamondOrigin.length
+                        ? `${diamondOrigin.length} item${diamondOrigin.length > 1 ? 's' : ''} selected`
                         : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
@@ -1817,13 +1835,12 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                       {diamondOriginStatic.map((origin) => (
                         <label className="dropdown-item" key={origin.id}>
                           <input
-                            type="radio"
-                            name="diamondOrigin"
+                            type="checkbox"
                             value={origin.value}
-                            checked={diamondOrigin === origin.value}
+                            checked={diamondOrigin.includes(origin.value)}
                             onChange={(e) => {
                               e.stopPropagation();
-                              selectDiamondOrigin(origin);
+                              toggleDiamondOrigin(origin);
                             }}
                           />
                           {origin.label}
