@@ -145,12 +145,20 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   // Center Stone Details Fields
   const [hasCenterStone, setHasCenterStone] = useState<boolean>(false);
   const [isCenterStoneAccordionOpen, setIsCenterStoneAccordionOpen] = useState<boolean>(false);
+  const [centerStoneStones, setCenterStoneStones] = useState<string[]>([]);
+  const [centerStoneDetailsData, setCenterStoneDetailsData] = useState<Record<string, {
+    origins: string[];
+    shapes: string[];
+    dimensions: string;
+    gemstoneType: string;
+    quantity: string;
+    avgColor: string;
+    avgClarity: string;
+    minDiamondWeight: string;
+    holdingMethods: string[];
+  }>>({});
   const [centerStoneCertified, setCenterStoneCertified] = useState<string>("No");
-  const [centerStoneShape, setCenterStoneShape] = useState<string>("");
   const [centerStoneMinWeight, setCenterStoneMinWeight] = useState<string>("");
-  const [centerStoneColor, setCenterStoneColor] = useState<string>("");
-  const [centerStoneColorQuality, setCenterStoneColorQuality] = useState<string>("");
-  const [centerStoneClarity, setCenterStoneClarity] = useState<string>("");
   const [centerStoneDiamondQuality, setCenterStoneDiamondQuality] = useState<string>("");
   const [centerStoneQualityType, setCenterStoneQualityType] = useState<string>("");
 
@@ -190,7 +198,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     holdingMethods: string[];
   }>>({});
   const [stoneDetailsCertified, setStoneDetailsCertified] = useState<string>("No");
-  const [stoneDetailsColor, setStoneDetailsColor] = useState<string>("");
 
   const [caratMinWeights, setCaratMinWeights] = useState<Record<string, string>>({});
   const [stylesDropdownOpen, setStylesDropdownOpen] = useState(false);
@@ -734,6 +741,69 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     });
   };
 
+  // Center Stone (independent) - toggle stone type and data handlers
+  const toggleCenterStoneStone = (stone: string) => {
+    setCenterStoneStones((prev) => {
+      const isRemoving = prev.includes(stone);
+      if (isRemoving) {
+        setCenterStoneDetailsData((dataPrev) => {
+          const newData = { ...dataPrev };
+          delete newData[stone];
+          return newData;
+        });
+        return prev.filter((s) => s !== stone);
+      } else {
+        setCenterStoneDetailsData((dataPrev) => ({
+          ...dataPrev,
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
+        }));
+        return [...prev, stone];
+      }
+    });
+  };
+
+  const updateCenterStoneData = (stone: string, field: string, value: any) => {
+    setCenterStoneDetailsData((prev) => ({
+      ...prev,
+      [stone]: {
+        ...prev[stone],
+        [field]: value
+      }
+    }));
+  };
+
+  const toggleCenterStoneOrigin = (stone: string, origin: string) => {
+    setCenterStoneDetailsData((prev) => {
+      const currentOrigins = prev[stone]?.origins || [];
+      const updatedOrigins = currentOrigins.includes(origin)
+        ? currentOrigins.filter((o) => o !== origin)
+        : [...currentOrigins, origin];
+      return {
+        ...prev,
+        [stone]: {
+          ...prev[stone],
+          origins: updatedOrigins
+        }
+      };
+    });
+  };
+
+  const toggleCenterStoneHoldingMethod = (stone: string, methodId: string) => {
+    setCenterStoneDetailsData((prev) => {
+      const currentMethods = prev[stone]?.holdingMethods || [];
+      const updatedMethods = currentMethods.includes(methodId)
+        ? currentMethods.filter((m) => m !== methodId)
+        : [...currentMethods, methodId];
+      return {
+        ...prev,
+        [stone]: {
+          ...prev[stone],
+          holdingMethods: updatedMethods
+        }
+      };
+    });
+  };
+
   // Stone Details Form Handlers
   const toggleStoneDetailStone = (stone: string) => {
     setStoneDetailsStones((prev) => {
@@ -979,11 +1049,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     setAverageWidth("");
     setRhodiumPlate("Yes");
     setCenterStoneCertified("No");
-    setCenterStoneShape("");
     setCenterStoneMinWeight("");
-    setCenterStoneColor("");
-    setCenterStoneColorQuality("");
-    setCenterStoneClarity("");
     setCenterStoneDiamondQuality("");
     setCenterStoneQualityType("");
     setHasSideStone(false);
@@ -991,13 +1057,14 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     // Reset Center Stone
     setHasCenterStone(false);
     setIsCenterStoneAccordionOpen(false);
+    setCenterStoneStones([]);
+    setCenterStoneDetailsData({});
     // Reset Stone Details Form
     setHasStoneDetailsForm(false);
     setIsStoneDetailsFormAccordionOpen(false);
     setStoneDetailsStones([]);
     setStoneDetailsData({});
     setStoneDetailsCertified("No");
-    setStoneDetailsColor("");
     setSelectedDesignStyles([]);
   };
 
@@ -1164,17 +1231,29 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       if (averageWidth.trim()) formData.append("average_width", averageWidth.trim());
       formData.append("rhodium_plate", rhodiumPlate);
 
-      // Center Stone Details
+      // Center Stone Details (independent stone selection)
       formData.append("center_stone_certified", centerStoneCertified);
-      if (centerStoneShape) formData.append("center_stone_shape", centerStoneShape);
       if (centerStoneMinWeight) formData.append("center_stone_min_weight", centerStoneMinWeight);
-      if (centerStoneColor) formData.append("center_stone_color", centerStoneColor);
-      if (centerStoneColorQuality) formData.append("center_stone_color_quality", centerStoneColorQuality);
-      if (centerStoneClarity) formData.append("center_stone_clarity", centerStoneClarity);
       if (centerStoneDiamondQuality) formData.append("center_stone_diamond_quality", centerStoneDiamondQuality);
       if (centerStoneQualityType) formData.append("center_stone_quality_type", centerStoneQualityType);
-
       if (centerStoneDetails.trim()) formData.append("center_stone_details", centerStoneDetails.trim());
+      if (hasCenterStone && centerStoneStones.length > 0) {
+        centerStoneStones.forEach((stone) => {
+          formData.append("center_stone", stone);
+          const data = centerStoneDetailsData[stone];
+          if (data) {
+            const stoneKey = stone.replace(/\s+/g, '_');
+            data.origins.forEach(origin => formData.append(`cs_${stoneKey}_origin`, origin));
+            if (data.quantity) formData.append(`cs_${stoneKey}_quantity`, data.quantity);
+            if (data.avgColor) formData.append(`cs_${stoneKey}_avg_color`, data.avgColor);
+            if (data.avgClarity) formData.append(`cs_${stoneKey}_avg_clarity`, data.avgClarity);
+            if (data.minDiamondWeight) formData.append(`cs_${stoneKey}_min_diamond_weight`, data.minDiamondWeight);
+            if (data.dimensions) formData.append(`cs_${stoneKey}_dimensions`, data.dimensions);
+            if (data.gemstoneType) formData.append(`cs_${stoneKey}_gemstone_type`, data.gemstoneType);
+            data.shapes.forEach(shape => formData.append(`cs_${stoneKey}_shape`, shape));
+          }
+        });
+      }
 
       // Side Stone Details
       if (hasSideStone) {
@@ -1199,7 +1278,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       // Stone Details Form
       if (hasStoneDetailsForm) {
         formData.append("stone_details_certified", stoneDetailsCertified);
-        if (stoneDetailsColor) formData.append("stone_details_color", stoneDetailsColor);
 
         stoneDetailsStones.forEach((stone) => {
           formData.append("stone_details_stone", stone);
@@ -2791,7 +2869,10 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                     onChange={(e) => {
                       const checked = e.target.checked;
                       setHasCenterStone(checked);
-
+                      if (checked) {
+                        setHasStoneDetailsForm(false);
+                        setIsStoneDetailsFormAccordionOpen(false);
+                      }
                       if (!checked) {
                         setIsCenterStoneAccordionOpen(false);
                       } else {
@@ -2805,19 +2886,17 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
               {/* Show section only if toggle ON AND accordion open */}
               {hasCenterStone && isCenterStoneAccordionOpen && (
                 <div className="mt-3">
-                  {/* 1. Add Stone - Synced with main Stone section (read-only) */}
+                  {/* 1. Stone selection - independent for this section */}
                   <div className="mb-3">
                     <label className="form-label text-black">Stone</label>
-                    <small className="text-muted d-block mb-2">(Select stones from the main Stone section above)</small>
                     <div className="w-100 half-divide">
                       <div className="form-check w-50">
                         <input
                           className="form-check-input"
                           type="checkbox"
                           id="cs-stone-diamond"
-                          checked={stones.includes("Diamond")}
-                          disabled
-                          readOnly
+                          checked={centerStoneStones.includes("Diamond")}
+                          onChange={() => toggleCenterStoneStone("Diamond")}
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-diamond">
                           Diamond
@@ -2828,9 +2907,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           className="form-check-input"
                           type="checkbox"
                           id="cs-stone-color-diamond"
-                          checked={stones.includes("Color Diamond")}
-                          disabled
-                          readOnly
+                          checked={centerStoneStones.includes("Color Diamond")}
+                          onChange={() => toggleCenterStoneStone("Color Diamond")}
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-color-diamond">
                           Color Diamond
@@ -2843,17 +2921,17 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           className="form-check-input"
                           type="checkbox"
                           id="cs-stone-gemstone"
-                          checked={stones.includes("Gemstone")}
-                          disabled
-                          readOnly
+                          checked={centerStoneStones.includes("Gemstone")}
+                          onChange={() => toggleCenterStoneStone("Gemstone")}
                         />
                         <label className="form-check-label text-black" htmlFor="cs-stone-gemstone">
                           Gemstone
                         </label>
                       </div>
                     </div>
+                  </div>
 
-                    {stones.map((stone) => (
+                    {centerStoneStones.map((stone) => (
                       <div key={stone} className="mb-4 p-3 border rounded bg-white shadow-sm">
                         <h6 className="text-black fw-bold mb-3 d-flex align-items-center">
                           <span className="badge bg-primary me-2">{stone}</span> Details
@@ -2864,18 +2942,18 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           <label className="form-label text-black">Diamond Origin</label>
                           <div className="w-100">
                             {diamondOriginStatic.map((origin) => (
-                              <div className="form-check form-check-inline" key={`ss-${stone}-origin-${origin.id}`}>
+                              <div className="form-check form-check-inline" key={`cs-${stone}-origin-${origin.id}`}>
                                 <input
                                   className="form-check-input"
                                   type="checkbox"
-                                  id={`ss-${stone.replace(/\s+/g, "_")}-origin-${origin.value}`}
+                                  id={`cs-${stone.replace(/\s+/g, "_")}-origin-${origin.value}`}
                                   value={origin.value}
-                                  checked={(sideStonesData[stone]?.origins || []).includes(origin.value)}
-                                  onChange={() => toggleSideStoneOrigin(stone, origin.value)}
+                                  checked={(centerStoneDetailsData[stone]?.origins || []).includes(origin.value)}
+                                  onChange={() => toggleCenterStoneOrigin(stone, origin.value)}
                                 />
                                 <label
                                   className="form-check-label text-black"
-                                  htmlFor={`ss-${stone.replace(/\s+/g, "_")}-origin-${origin.value}`}
+                                  htmlFor={`cs-${stone.replace(/\s+/g, "_")}-origin-${origin.value}`}
                                 >
                                   {origin.label}
                                 </label>
@@ -2891,15 +2969,15 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
 
                           <div className="d-flex flex-wrap gap-2">
                             {diamondShapeStatic.map((shape) => {
-                              const selectedShapes = sideStonesData[stone]?.shapes || [];
+                              const selectedShapes = centerStoneDetailsData[stone]?.shapes || [];
 
                               return (
                                 <div className="form-check form-check-inline" key={shape}>
                                   <input
                                     className="form-check-input"
                                     type="checkbox"
-                                    name={`ss-${stone.replace(/\s+/g, "_")}-shapes`}
-                                    id={`ss-${stone.replace(/\s+/g, "_")}-shape-${shape}`}
+                                    name={`cs-${stone.replace(/\s+/g, "_")}-shapes`}
+                                    id={`cs-${stone.replace(/\s+/g, "_")}-shape-${shape}`}
                                     value={shape}
                                     checked={selectedShapes.includes(shape)}
                                     onChange={(e) => {
@@ -2909,12 +2987,12 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                                         ? selectedShapes.filter((s) => s !== value)
                                         : [...selectedShapes, value];
 
-                                      updateSideStoneData(stone, "shapes", updatedShapes);
+                                      updateCenterStoneData(stone, "shapes", updatedShapes);
                                     }}
                                   />
                                   <label
                                     className="form-check-label text-black"
-                                    htmlFor={`ss-${stone.replace(/\s+/g, "_")}-shape-${shape}`}
+                                    htmlFor={`cs-${stone.replace(/\s+/g, "_")}-shape-${shape}`}
                                   >
                                     {shape}
                                   </label>
@@ -2932,8 +3010,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                                 type="text"
                                 className="form-control"
                                 placeholder="Enter Dimensions"
-                                value={sideStonesData[stone]?.dimensions || ""}
-                                onChange={(e) => updateSideStoneData(stone, "dimensions", e.target.value)}
+                                value={centerStoneDetailsData[stone]?.dimensions || ""}
+                                onChange={(e) => updateCenterStoneData(stone, "dimensions", e.target.value)}
                               />
                             </div>
                             <div className="mb-3">
@@ -2942,8 +3020,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                                 type="text"
                                 className="form-control"
                                 placeholder="Enter Gemstone Type"
-                                value={sideStonesData[stone]?.gemstoneType || ""}
-                                onChange={(e) => updateSideStoneData(stone, "gemstoneType", e.target.value)}
+                                value={centerStoneDetailsData[stone]?.gemstoneType || ""}
+                                onChange={(e) => updateCenterStoneData(stone, "gemstoneType", e.target.value)}
                               />
                             </div>
                           </>
@@ -2954,8 +3032,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                               type="text"
                               className="form-control"
                               placeholder="Enter Min Diamond Weight"
-                              value={sideStonesData[stone]?.minDiamondWeight || ""}
-                              onChange={(e) => updateSideStoneData(stone, "minDiamondWeight", e.target.value)}
+                              value={centerStoneDetailsData[stone]?.minDiamondWeight || ""}
+                              onChange={(e) => updateCenterStoneData(stone, "minDiamondWeight", e.target.value)}
                             />
                           </div>
                         )}
@@ -2967,8 +3045,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                             type="number"
                             className="form-control"
                             placeholder={`Enter Quantity for ${stone}`}
-                            value={sideStonesData[stone]?.quantity || ""}
-                            onChange={(e) => updateSideStoneData(stone, "quantity", e.target.value)}
+                            value={centerStoneDetailsData[stone]?.quantity || ""}
+                            onChange={(e) => updateCenterStoneData(stone, "quantity", e.target.value)}
                           />
                         </div>
 
@@ -2979,8 +3057,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                             type="text"
                             className="form-control"
                             placeholder={`Enter Average Color for ${stone}`}
-                            value={sideStonesData[stone]?.avgColor || ""}
-                            onChange={(e) => updateSideStoneData(stone, "avgColor", e.target.value)}
+                            value={centerStoneDetailsData[stone]?.avgColor || ""}
+                            onChange={(e) => updateCenterStoneData(stone, "avgColor", e.target.value)}
                           />
                         </div>
 
@@ -2991,8 +3069,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                             type="text"
                             className="form-control"
                             placeholder={`Enter Average Clarity for ${stone}`}
-                            value={sideStonesData[stone]?.avgClarity || ""}
-                            onChange={(e) => updateSideStoneData(stone, "avgClarity", e.target.value)}
+                            value={centerStoneDetailsData[stone]?.avgClarity || ""}
+                            onChange={(e) => updateCenterStoneData(stone, "avgClarity", e.target.value)}
                           />
                         </div>
 
@@ -3007,8 +3085,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                                   type="checkbox"
                                   id={`cs-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}
                                   value={item._id}
-                                  checked={(sideStonesData[stone]?.holdingMethods || []).includes(item._id)}
-                                  onChange={() => toggleSideStoneHoldingMethod(stone, item._id)}
+                                  checked={(centerStoneDetailsData[stone]?.holdingMethods || []).includes(item._id)}
+                                  onChange={() => toggleCenterStoneHoldingMethod(stone, item._id)}
                                 />
                                 <label className="form-check-label text-black" htmlFor={`cs-${stone.replace(/\s+/g, '_')}-holdingMethod-${item._id}`}>
                                   {item.displayName}
@@ -3019,7 +3097,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                         </div>
                       </div>
                     ))}
-                  </div>
 
                   {/* 3. IGI / GIA Certified: Yes / No Radio button */}
                   <div className="mb-3">
@@ -3054,65 +3131,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                         </label>
                       </div>
                     </div>
-                  </div>
-
-                  {/* 4. Diamond Shape */}
-                  <div className="mb-3">
-                    <label className="form-label text-black">Diamond Shape</label>
-                    <div className="d-flex flex-wrap gap-2">
-                      {diamondShapeStatic.map((shape) => (
-                        <div className="form-check form-check-inline" key={shape}>
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            name="centerStoneShape"
-                            id={`cs-shape-${shape}`}
-                            value={shape}
-                            checked={centerStoneShape === shape}
-                            onChange={(e) => setCenterStoneShape(e.target.value)}
-                          />
-                          <label className="form-check-label text-black" htmlFor={`cs-shape-${shape}`}>
-                            {shape}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 6. Color */}
-                  <div className="mb-3">
-                    <label className="form-label text-black">Color</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Enter Color"
-                      value={centerStoneColor}
-                      onChange={(e) => setCenterStoneColor(e.target.value)}
-                    />
-                  </div>
-
-                  {/* 7. Color Quality - Read Only */}
-                  <div className="mb-3">
-                    <label className="form-label text-black">Color Quality (Derived)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Select Diamond Quality"
-                      value={centerStoneColorQuality}
-                      readOnly
-                    />
-                  </div>
-
-                  {/* 8. Clarity - Read Only */}
-                  <div className="mb-3">
-                    <label className="form-label text-black">Clarity (Derived)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Select Diamond Quality"
-                      value={centerStoneClarity}
-                      readOnly
-                    />
                   </div>
                 </div>
               )}
@@ -3317,13 +3335,13 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                         />
                       </div>
 
-                      {/* Average Color */}
+                      {/* Average Color Quality */}
                       <div className="mb-3">
-                        <label className="form-label text-black">Average Color</label>
+                        <label className="form-label text-black">Average Color Quality</label>
                         <input
                           type="text"
                           className="form-control"
-                          placeholder={`Enter Average Color for ${stone}`}
+                          placeholder={`Enter Average Color Quality for ${stone}`}
                           value={sideStonesData[stone]?.avgColor || ""}
                           onChange={(e) => updateSideStoneData(stone, "avgColor", e.target.value)}
                         />
@@ -3384,8 +3402,13 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                       id="stoneDetailsFormToggle"
                       checked={hasStoneDetailsForm}
                       onChange={(e) => {
-                        setHasStoneDetailsForm(e.target.checked);
-                        if (!e.target.checked) setIsStoneDetailsFormAccordionOpen(false);
+                        const checked = e.target.checked;
+                        setHasStoneDetailsForm(checked);
+                        if (checked) {
+                          setHasCenterStone(false);
+                          setIsCenterStoneAccordionOpen(false);
+                        }
+                        if (!checked) setIsStoneDetailsFormAccordionOpen(false);
                         else setIsStoneDetailsFormAccordionOpen(true);
                       }}
                     />
@@ -3438,31 +3461,17 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                     </div>
                   </div>
 
-                  {/* Color Field */}
-                  <div className="mb-3">
-                    <label className="form-label text-black">Color</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Enter Color"
-                      value={stoneDetailsColor}
-                      onChange={(e) => setStoneDetailsColor(e.target.value)}
-                    />
-                  </div>
-
-                  {/* 1. Stone selection - Synced with main Stone section (read-only) */}
+                  {/* 1. Stone selection - independent for this section */}
                   <div className="mb-3">
                     <label className="form-label text-black">Stone</label>
-                    <small className="text-muted d-block mb-2">(Select stones from the main Stone section above)</small>
                     <div className="w-100 half-divide">
                       <div className="form-check w-50">
                         <input
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-diamond"
-                          checked={stones.includes("Diamond")}
-                          disabled
-                          readOnly
+                          checked={stoneDetailsStones.includes("Diamond")}
+                          onChange={() => toggleStoneDetailStone("Diamond")}
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-diamond">
                           Diamond
@@ -3473,9 +3482,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-color-diamond"
-                          checked={stones.includes("Color Diamond")}
-                          disabled
-                          readOnly
+                          checked={stoneDetailsStones.includes("Color Diamond")}
+                          onChange={() => toggleStoneDetailStone("Color Diamond")}
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-color-diamond">
                           Color Diamond
@@ -3488,9 +3496,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           className="form-check-input"
                           type="checkbox"
                           id="sd-stone-gemstone"
-                          checked={stones.includes("Gemstone")}
-                          disabled
-                          readOnly
+                          checked={stoneDetailsStones.includes("Gemstone")}
+                          onChange={() => toggleStoneDetailStone("Gemstone")}
                         />
                         <label className="form-check-label text-black" htmlFor="sd-stone-gemstone">
                           Gemstone
@@ -3500,7 +3507,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                   </div>
 
                   {/* Sub-form for each selected stone */}
-                  {stones.map((stone) => (
+                  {stoneDetailsStones.map((stone) => (
                     <div key={stone} className="mb-4 p-3 border rounded bg-white shadow-sm">
                       <h6 className="text-black fw-bold mb-3 d-flex align-items-center">
                         <span className="badge bg-primary me-2">{stone}</span> Details
