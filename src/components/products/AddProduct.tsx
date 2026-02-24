@@ -145,6 +145,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     gemstoneType: string;
     quantity: string;
     avgColor: string;
+    colorQuality: string;
     avgClarity: string;
     minDiamondWeight: string;
     holdingMethods: string[];
@@ -172,6 +173,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     gemstoneType: string;
     quantity: string;
     avgColor: string;
+    colorQuality: string;
     avgClarity: string;
     minDiamondWeight: string;
     holdingMethods: string[];
@@ -188,6 +190,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
     gemstoneType: string;
     quantity: string;
     avgColor: string;
+    colorQuality: string;
     avgClarity: string;
     minDiamondWeight: string;
     holdingMethods: string[];
@@ -685,7 +688,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       } else {
         setSideStonesData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", colorQuality: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -735,7 +738,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       } else {
         setCenterStoneDetailsData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", colorQuality: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -798,7 +801,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
       } else {
         setStoneDetailsData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", colorQuality: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -1386,6 +1389,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             min_diamond_weight: stoneData.minDiamondWeight || '',
             quantity: stoneData.quantity || '',
             average_color: stoneData.avgColor || '',
+            color_quality: stoneData.colorQuality || '',
             average_clarity: stoneData.avgClarity || '',
             dimensions: stoneData.dimensions || '',
             gemstone_type: stoneData.gemstoneType || '',
@@ -1414,6 +1418,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             min_diamond_weight: stoneData.minDiamondWeight || '',
             quantity: stoneData.quantity || '',
             average_color: stoneData.avgColor || '',
+            color_quality: stoneData.colorQuality || '',
             average_clarity: stoneData.avgClarity || '',
             dimensions: stoneData.dimensions || '',
             gemstone_type: stoneData.gemstoneType || '',
@@ -1437,6 +1442,7 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
             min_diamond_weight: stoneData.minDiamondWeight || '',
             quantity: stoneData.quantity || '',
             average_color: stoneData.avgColor || '',
+            color_quality: stoneData.colorQuality || '',
             average_clarity: stoneData.avgClarity || '',
             dimensions: stoneData.dimensions || '',
             gemstone_type: stoneData.gemstoneType || '',
@@ -3263,6 +3269,18 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           />
                         </div>
 
+                        {/* Color quality */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Color Quality</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder={`Enter Color quality for ${stone}`}
+                            value={centerStoneDetailsData[stone]?.colorQuality || ""}
+                            onChange={(e) => updateCenterStoneData(stone, "colorQuality", e.target.value)}
+                          />
+                        </div>
+
                         {/* Average Clarity */}
                         <div className="mb-3">
                           <label className="form-label text-black">Average Clarity</label>
@@ -3837,6 +3855,18 @@ function AddProduct({ show, handleClose, categories = [], subCategories = [], on
                           placeholder={`Enter Average Color for ${stone}`}
                           value={stoneDetailsData[stone]?.avgColor || ""}
                           onChange={(e) => updateStoneDetailData(stone, "avgColor", e.target.value)}
+                        />
+                      </div>
+
+                      {/* Color quality */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Color Quality</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={`Enter Color quality for ${stone}`}
+                          value={stoneDetailsData[stone]?.colorQuality || ""}
+                          onChange={(e) => updateStoneDetailData(stone, "colorQuality", e.target.value)}
                         />
                       </div>
 

@@ -153,6 +153,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     gemstoneType: string;
     quantity: string;
     avgColor: string;
+    colorQuality: string;
     avgClarity: string;
     minDiamondWeight: string;
     holdingMethods: string[];
@@ -177,6 +178,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     gemstoneType: string;
     quantity: string;
     avgColor: string;
+    colorQuality: string;
     avgClarity: string;
     minDiamondWeight: string;
     holdingMethods: string[];
@@ -193,6 +195,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     gemstoneType: string;
     quantity: string;
     avgColor: string;
+    colorQuality: string;
     avgClarity: string;
     minDiamondWeight: string;
     holdingMethods: string[];
@@ -705,7 +708,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       } else {
         setSideStonesData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", colorQuality: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -755,7 +758,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       } else {
         setCenterStoneDetailsData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", colorQuality: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -818,7 +821,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       } else {
         setStoneDetailsData((dataPrev) => ({
           ...dataPrev,
-          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
+          [stone]: { origins: [], shapes: [], dimensions: "", gemstoneType: "", quantity: "", avgColor: "", colorQuality: "", avgClarity: "", minDiamondWeight: "", holdingMethods: [] }
         }));
         return [...prev, stone];
       }
@@ -3062,6 +3065,18 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           />
                         </div>
 
+                        {/* Color quality */}
+                        <div className="mb-3">
+                          <label className="form-label text-black">Color Quality</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder={`Enter Color quality for ${stone}`}
+                            value={centerStoneDetailsData[stone]?.colorQuality || ""}
+                            onChange={(e) => updateCenterStoneData(stone, "colorQuality", e.target.value)}
+                          />
+                        </div>
+
                         {/* Average Clarity */}
                         <div className="mb-3">
                           <label className="form-label text-black">Average Clarity</label>
@@ -3634,6 +3649,18 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                           placeholder={`Enter Average Color for ${stone}`}
                           value={stoneDetailsData[stone]?.avgColor || ""}
                           onChange={(e) => updateStoneDetailData(stone, "avgColor", e.target.value)}
+                        />
+                      </div>
+
+                      {/* Color quality */}
+                      <div className="mb-3">
+                        <label className="form-label text-black">Color Quality</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={`Enter Color quality for ${stone}`}
+                          value={stoneDetailsData[stone]?.colorQuality || ""}
+                          onChange={(e) => updateStoneDetailData(stone, "colorQuality", e.target.value)}
                         />
                       </div>
 
