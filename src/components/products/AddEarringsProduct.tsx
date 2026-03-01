@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Modal from "react-bootstrap/Modal";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useCreateEarringsProductMutation } from "../../store/api/productApi";
+import { useCreateEarringsProductMutation, useImportEarringsProductsMutation, useImportEarringsVariantsMutation } from "../../store/api/productApi";
+import { getApiBaseUrl } from "../../store/api/apiSlice";
 import {
   useGetSettingConfigurationsQuery,
   useGetShankConfigurationsQuery,
@@ -18,6 +19,7 @@ import {
   useGetFinishDetailsQuery,
   useGetPlacementFitsQuery,
   useGetStoneSettingsQuery,
+  useGetSizeScalesQuery,
 } from "../../store/api/productAttributesApi";
 import { useGetSubSubCategoriesQuery } from "../../store/api/subSubCategoryApi";
 import { toast } from "sonner";
@@ -118,10 +120,12 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
   const [productSpecials, setProductSpecials] = useState<string>("");
   // Status
   const [status, setStatus] = useState<string>("active");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [variantCsvFile, setVariantCsvFile] = useState<File | null>(null);
 
   // Radio button fields (single select)
   const [settingConfigurations, setSettingConfigurations] = useState<string>("");
-  const [shankConfigurations, setShankConfigurations] = useState<string[]>([]);
+  const [shankConfigurations, setShankConfigurations] = useState<string>("");
   const [bandProfileShapes, setBandProfileShapes] = useState<string>("");
   const [bandWidthCategories, setBandWidthCategories] = useState<string>("");
   const [bandFits, setBandFits] = useState<string[]>([]);
@@ -139,6 +143,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
 
   // New Product Details Fields
   const [averageWidth, setAverageWidth] = useState<string>("");
+  const [averageLength, setAverageLength] = useState<string>("");
   const [rhodiumPlate, setRhodiumPlate] = useState<string>("Yes");
   const [isProductDetailsAccordionOpen, setIsProductDetailsAccordionOpen] = useState<boolean>(false);
 
@@ -221,6 +226,8 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
 
   // Loading state
   const [createEarringsProduct, { isLoading }] = useCreateEarringsProductMutation();
+  const [importEarringsProducts, { isLoading: isImporting }] = useImportEarringsProductsMutation();
+  const [importEarringsVariants, { isLoading: isImportingVariants }] = useImportEarringsVariantsMutation();
 
   // Fetch product attributes
   const { data: settingConfigurationsData } = useGetSettingConfigurationsQuery();
@@ -238,6 +245,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
   const { data: finishDetailsData } = useGetFinishDetailsQuery();
   const { data: placementFitsData } = useGetPlacementFitsQuery();
   const { data: stoneSettingsData } = useGetStoneSettingsQuery();
+  const { data: sizeScalesData } = useGetSizeScalesQuery();
 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const subCategoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -369,6 +377,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
   const finishDetails = (finishDetailsData?.data as any[]) || [];
   const placementFits = (placementFitsData?.data as any[]) || [];
   const stoneSettings = (stoneSettingsData?.data as any[]) || [];
+  const sizeScales = (sizeScalesData?.data as any[]) || [];
 
   const stoneSettingStatic = [
     { id: 1, label: "Prong Setting", value: "prong-setting" },
@@ -394,15 +403,6 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
     { id: 3, label: "Tight Fit", value: "tight-fit" },
     { id: 4, label: "Loose Fit", value: "loose-fit" },
     { id: 5, label: "Adjustable Fit", value: "adjustable-fit" },
-  ];
-
-  const sizeScaleStatic = [
-    { id: 1, label: "US", value: "us" },
-    { id: 2, label: "UK", value: "uk" },
-    { id: 3, label: "EU", value: "eu" },
-    { id: 4, label: "AU", value: "au" },
-    { id: 5, label: "JP", value: "jp" },
-    { id: 6, label: "CN", value: "cn" },
   ];
 
   const ringSizeStatic = ["4", "5", "6", "7", "8", "9", "10", "11", "12"];
@@ -948,12 +948,9 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
     );
   };
 
-  const toggleDropShape = (value: string) => {
-    setShankConfigurations((prev) =>
-      prev.includes(value)
-        ? prev.filter((item) => item !== value)
-        : [...prev, value]
-    );
+  const selectDropShape = (value: string) => {
+    setShankConfigurations(value);
+    setDropShapeDropdownOpen(false);
   };
 
   const toggleBandFit = (value: string) => {
@@ -1053,7 +1050,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
     setStatus("active");
     // Reset new fields
     setSettingConfigurations("");
-    setShankConfigurations([]);
+    setShankConfigurations("");
     setBandProfileShapes("");
     setBandWidthCategories("");
     setBandFits([]);
@@ -1068,6 +1065,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
     setSideStones([]);
     setSideStonesData({});
     setAverageWidth("");
+    setAverageLength("");
     setRhodiumPlate("Yes");
     setCenterStoneCertified("No");
     setCenterStoneMinWeight("");
@@ -1117,12 +1115,13 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
         return;
       }
     }
-    if (!settingConfigurations) {
-      toast.error("Please select Unit of Sale");
-      return;
-    }
-    if (shankConfigurations.length === 0) {
-      toast.error("Please select at least one Drop Shape");
+    // Unit of Sale - commented out
+    // if (!settingConfigurations) {
+    //   toast.error("Please select Unit of Sale");
+    //   return;
+    // }
+    if (!shankConfigurations) {
+      toast.error("Please select Drop Shape");
       return;
     }
     if (!bandProfileShapes) {
@@ -1248,6 +1247,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
       formData.append("gift", gift.toString());
       if (productDetails.trim()) formData.append("product_details", productDetails.trim());
       if (averageWidth.trim()) formData.append("average_width", averageWidth.trim());
+      if (averageLength.trim()) formData.append("average_length", averageLength.trim());
       formData.append("rhodium_plate", rhodiumPlate);
 
       // Center Stone Details
@@ -1363,7 +1363,9 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
       if (settingConfigurations) {
         formData.append("settingConfigurations", settingConfigurations);
       }
-      shankConfigurations.forEach((value) => formData.append("shankConfigurations", value));
+      if (shankConfigurations) {
+        formData.append("shankConfigurations", shankConfigurations);
+      }
       if (styleSubCategory) {
         formData.append("styleSubCategory", styleSubCategory);
       }
@@ -1467,7 +1469,119 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
     );
   };
 
+  // CSV file selection
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setCsvFile(file);
+  };
+  const handleVariantCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setVariantCsvFile(file);
+  };
 
+  // Handle +Import CSV (calls /import-earrings-product); on success auto-download earrings variants CSV
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      toast.error("Please select a CSV file");
+      return;
+    }
+    if (!csvFile.name.endsWith(".csv")) {
+      toast.error("Please select a valid CSV file");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("csv", csvFile);
+      const result = await importEarringsProducts(formData).unwrap();
+      if (result.success) {
+        const data = result.data as any;
+        toast.success(
+          `CSV import completed! Created: ${data?.created ?? 0}, Skipped: ${data?.skipped ?? 0}, Errors: ${data?.errors ?? 0}`
+        );
+        if (data?.error_details?.length) {
+          console.error("Import errors:", data.error_details);
+          toast.error("Some rows had errors. Check console for details.");
+        }
+
+        // Auto-download earrings variants CSV after successful import
+        try {
+          const apiBase = getApiBaseUrl();
+          const token = localStorage.getItem("token") || "";
+          const createdProducts = Array.isArray(data?.created_products) ? data.created_products : [];
+          const createdIds = createdProducts
+            .map((p: any) => (typeof p?._id === "string" ? p._id : p?._id?.toString?.()))
+            .filter((id: string | undefined) => !!id);
+          const queryParam =
+            createdIds.length > 0 ? `?productIds=${encodeURIComponent(createdIds.join(","))}` : "";
+
+          const response = await fetch(
+            `${apiBase}/Admin/export-earrings-variants${queryParam}`,
+            {
+              method: "GET",
+              headers: { Authorization: token ? `Bearer ${token}` : "" },
+            }
+          );
+
+          if (!response.ok) throw new Error("Failed to download variants CSV");
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "earring_variants.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+          toast.success("Variants CSV downloaded. Update prices and upload to update variants.");
+        } catch (downloadError) {
+          console.error("Error downloading variants CSV:", downloadError);
+          toast.error("Products imported, but failed to download variants CSV. Please try again.");
+        }
+
+        setCsvFile(null);
+        const fileInput = document.getElementById("earrings-csv-file-input") as HTMLInputElement;
+        if (fileInput) fileInput.value = "";
+        handleClose();
+        if (onSuccess) onSuccess();
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to import CSV");
+      console.error("Error importing earrings CSV:", error);
+    }
+  };
+
+  // Handle Import Variants CSV (update variant prices via /import-earrings-variants)
+  const handleVariantCsvImport = async () => {
+    if (!variantCsvFile) {
+      toast.error("Please select a Variants CSV file");
+      return;
+    }
+    if (!variantCsvFile.name.endsWith(".csv")) {
+      toast.error("Please select a valid CSV file for variants");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("csv", variantCsvFile);
+      const result = await importEarringsVariants(formData).unwrap();
+      const data = result.data as any;
+      toast.success(
+        `Variants updated! Rows: ${data?.processed_rows ?? 0}, Updated variants: ${data?.updated_variants ?? 0}, Errors: ${data?.errors ?? 0}`
+      );
+      if (data?.error_details?.length) {
+        console.error("Variant import errors:", data.error_details);
+        toast.error("Some variant rows had errors. Check console for details.");
+      }
+      setVariantCsvFile(null);
+      const fileInput = document.getElementById("earrings-variant-csv-file-input") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+      if (onSuccess) onSuccess();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to import variants CSV and update prices");
+      console.error("Error importing earrings variants CSV:", error);
+    }
+  };
 
   return (
     <Modal centered show={show} onHide={handleClose} size="lg" className="modal-parent">
@@ -2049,6 +2163,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
               </div>
             </div>
             {/* Radio Button Fields - Single Select */}
+            {/* Unit of Sale - commented out
             <div className="mb-3">
               <label className="form-label text-black">Unit of Sale *</label>
               <div>
@@ -2074,6 +2189,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
                 )}
               </div>
             </div>
+            */}
 
             <div className="mb-3">
               <label className="form-label text-black">Carat Weight</label>
@@ -2323,12 +2439,33 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
               </div>
             </div>
 
+            <div className="mb-3">
+              <label className="form-label text-black">Size Scale</label>
+              <div>
+                {sizeScales.length > 0 ? (
+                  sizeScales.map((item) => (
+                    <div className="form-check form-check-inline" key={item._id}>
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="sizeScale"
+                        id={`sizeScale-${item._id}`}
+                        value={item._id}
+                        checked={sizeScale === item._id}
+                        onChange={(e) => setSizeScale(e.target.value)}
+                      />
+                      <label className="form-check-label text-black" htmlFor={`sizeScale-${item._id}`}>
+                        {item.displayName}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-muted">Loading size scales...</span>
+                )}
+              </div>
+            </div>
 
-
-
-
-
-
+            {/* Style (Sub-Category linked) - commented out
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={styleSubCategoryDropdownRef}>
                 <label className="dropdown-label text-black">Style (Sub-Category linked)</label>
@@ -2385,8 +2522,9 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
                 </div>
               </div>
             </div>
+            */}
 
-            {/* Multi-Select Dropdown for Drop Shape */}
+            {/* Single-Select Dropdown for Drop Shape */}
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={dropShapeDropdownRef}>
                 <label className="dropdown-label text-black">Drop Shape *</label>
@@ -2396,8 +2534,8 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
                     onClick={() => setDropShapeDropdownOpen(!dropShapeDropdownOpen)}
                   >
                     <span>
-                      {shankConfigurations.length
-                        ? `${shankConfigurations.length} item${shankConfigurations.length > 1 ? 's' : ''} selected`
+                      {shankConfigurations
+                        ? (dropShapes.find((d) => d._id === shankConfigurations)?.displayName ?? "Select...")
                         : "Select..."}
                     </span>
                     <i className="dropdown-arrow"></i>
@@ -2406,18 +2544,14 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
                     <div className="dropdown-list">
                       {dropShapes.length > 0 ? (
                         dropShapes.map((item) => (
-                          <label className="dropdown-item" key={item._id}>
-                            <input
-                              type="checkbox"
-                              value={item._id}
-                              checked={shankConfigurations.includes(item._id)}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                toggleDropShape(item._id);
-                              }}
-                            />
+                          <div
+                            className={`dropdown-item ${shankConfigurations === item._id ? "selected" : ""}`}
+                            key={item._id}
+                            onClick={() => selectDropShape(item._id)}
+                            style={{ cursor: "pointer" }}
+                          >
                             {item.displayName}
-                          </label>
+                          </div>
                         ))
                       ) : (
                         <div className="dropdown-item">Loading drop shapes...</div>
@@ -2430,7 +2564,7 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
 
 
             <div className="mb-3">
-              <label className="form-label text-black">Lock (AttachmentType linked) *</label>
+              <label className="form-label text-black">Attachment Type</label>
               <div>
                 {attachmentTypes.length > 0 ? (
                   attachmentTypes.map((item) => (
@@ -2712,28 +2846,6 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
               </div>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label text-black">Size Scale</label>
-              <div>
-                {sizeScaleStatic.map((item) => (
-                  <div className="form-check form-check-inline" key={item.id}>
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="sizeScale"
-                      id={`sizeScale-${item.id}`}
-                      value={item.value}
-                      checked={sizeScale === item.value}
-                      onChange={(e) => setSizeScale(e.target.value)}
-                    />
-                    <label className="form-check-label text-black" htmlFor={`sizeScale-${item.id}`}>
-                      {item.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Engraving Checkbox */}
             <div className="mb-3">
               <div className="form-check">
@@ -2797,6 +2909,18 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
                       placeholder="Dimmensions"
                       value={averageWidth}
                       onChange={(e) => setAverageWidth(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Average Length */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Average Length</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter Average Length"
+                      value={averageLength}
+                      onChange={(e) => setAverageLength(e.target.value)}
                     />
                   </div>
 
@@ -3835,15 +3959,71 @@ function AddEarringsProduct({ show, handleClose, categories = [], subCategories 
               )}
             </div>
 
-
-
-            <button
-              className="btn w-100 mt-3 submit-background"
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? "Submitting..." : "Submit"}
-            </button>
+            <div className="d-flex gap-2 mt-3">
+              <button
+                className="btn flex-grow-1 submit-background"
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? "Submitting..." : "Submit"}
+              </button>
+              <div className="flex-grow-1">
+                <input
+                  type="file"
+                  id="earrings-csv-file-input"
+                  accept=".csv"
+                  onChange={handleCsvFileChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="btn w-100"
+                  type="button"
+                  onClick={() => document.getElementById("earrings-csv-file-input")?.click()}
+                  style={{ backgroundColor: "#6f42c1", color: "white", border: "none" }}
+                >
+                  {csvFile ? `Selected: ${csvFile.name}` : "+Import CSV"}
+                </button>
+                {csvFile && (
+                  <button
+                    className="btn w-100 mt-2"
+                    type="button"
+                    onClick={handleCsvImport}
+                    disabled={isImporting}
+                    style={{ backgroundColor: "#28a745", color: "white", border: "none" }}
+                  >
+                    {isImporting ? "Importing..." : "Upload CSV"}
+                  </button>
+                )}
+              </div>
+              <div className="flex-grow-1">
+                <input
+                  type="file"
+                  id="earrings-variant-csv-file-input"
+                  accept=".csv"
+                  onChange={handleVariantCsvFileChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="btn w-100"
+                  type="button"
+                  onClick={() => document.getElementById("earrings-variant-csv-file-input")?.click()}
+                  style={{ backgroundColor: "#17a2b8", color: "white", border: "none" }}
+                >
+                  {variantCsvFile ? `Selected: ${variantCsvFile.name}` : "Import Variants CSV"}
+                </button>
+                {variantCsvFile && (
+                  <button
+                    className="btn w-100 mt-2"
+                    type="button"
+                    onClick={handleVariantCsvImport}
+                    disabled={isImportingVariants}
+                    style={{ backgroundColor: "#138496", color: "white", border: "none" }}
+                  >
+                    {isImportingVariants ? "Updating Variants..." : "Upload & Update Variants"}
+                  </button>
+                )}
+              </div>
+            </div>
           </form>
         </div>
       </Modal.Body>

@@ -114,7 +114,7 @@ export function ProductManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("all");
-  const [selectedStatus, setSelectedStatus] = useState<string>("Active");
+  const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 
@@ -134,7 +134,7 @@ export function ProductManagement() {
   const queryParams: any = {};
   if (selectedCategory !== "all") queryParams.categoryId = selectedCategory;
   if (selectedSubCategory !== "all") queryParams.subCategoryId = selectedSubCategory;
-  if (selectedStatus) queryParams.status = selectedStatus;
+  if (selectedStatus && selectedStatus !== "All") queryParams.status = selectedStatus;
 
   const { data: productsResponse, isLoading, refetch } = useGetProductsQuery(queryParams);
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
@@ -725,6 +725,7 @@ export function ProductManagement() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="All">All</SelectItem>
                 <SelectItem value="Active">Active</SelectItem>
                 <SelectItem value="Inactive">Inactive</SelectItem>
                 <SelectItem value="Draft">Draft</SelectItem>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Modal from "react-bootstrap/Modal";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useCreateNecklaceProductMutation } from "../../store/api/productApi";
+import { useCreateNecklaceProductMutation, useImportNecklaceProductsMutation, useImportNecklaceVariantsMutation } from "../../store/api/productApi";
+import { getApiBaseUrl } from "../../store/api/apiSlice";
 import {
   useGetSettingConfigurationsQuery,
   useGetShankConfigurationsQuery,
@@ -18,6 +19,7 @@ import {
   useGetClosureTypesQuery,
   useGetStoneSettingsQuery,
   useGetPlacementFitsQuery,
+  useGetSizeScalesQuery,
 } from "../../store/api/productAttributesApi";
 import { useGetSubSubCategoriesQuery } from "../../store/api/subSubCategoryApi";
 import { toast } from "sonner";
@@ -139,6 +141,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
 
   // New Product Details Fields
   const [averageWidth, setAverageWidth] = useState<string>("");
+  const [averageLength, setAverageLength] = useState<string>("");
   const [rhodiumPlate, setRhodiumPlate] = useState<string>("Yes");
   const [isProductDetailsAccordionOpen, setIsProductDetailsAccordionOpen] = useState<boolean>(false);
 
@@ -219,6 +222,10 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
 
   // Loading state
   const [createNecklaceProduct, { isLoading }] = useCreateNecklaceProductMutation();
+  const [importNecklaceProducts, { isLoading: isImporting }] = useImportNecklaceProductsMutation();
+  const [importNecklaceVariants, { isLoading: isImportingVariants }] = useImportNecklaceVariantsMutation();
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [variantCsvFile, setVariantCsvFile] = useState<File | null>(null);
 
   // Fetch product attributes
   const { data: settingConfigurationsData } = useGetSettingConfigurationsQuery();
@@ -233,6 +240,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
   const { data: assemblyTypesData } = useGetAssemblyTypesQuery();
   const { data: chainTypesData } = useGetChainTypesQuery();
   const { data: finishDetailsData } = useGetFinishDetailsQuery();
+  const { data: sizeScalesData } = useGetSizeScalesQuery();
   const { data: closureTypesData } = useGetClosureTypesQuery();
   const { data: stoneSettingsData } = useGetStoneSettingsQuery();
   const { data: placementFitsData } = useGetPlacementFitsQuery();
@@ -340,18 +348,10 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
 
   // Finish Details from API
   const finishDetails = (finishDetailsData?.data as any[]) || [];
+  const sizeScales = (sizeScalesData?.data as any[]) || [];
 
   // Placement Fits from API
   const placementFits = (placementFitsData?.data as any[]) || [];
-
-  const sizeScaleStatic = [
-    { id: 1, label: "US", value: "us" },
-    { id: 2, label: "UK", value: "uk" },
-    { id: 3, label: "EU", value: "eu" },
-    { id: 4, label: "AU", value: "au" },
-    { id: 5, label: "JP", value: "jp" },
-    { id: 6, label: "CN", value: "cn" },
-  ];
 
   const ringSizeStatic = ["4", "5", "6", "7", "8", "9", "10", "11", "12"];
   const necklaceSizeStatic = ["16\"", "18\"", "20\"", "22\"", "24\""];
@@ -1041,6 +1041,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     setSideStones([]);
     setSideStonesData({});
     setAverageWidth("");
+    setAverageLength("");
     setRhodiumPlate("Yes");
     setCenterStoneCertified("No");
     setCenterStoneMinWeight("");
@@ -1060,6 +1061,122 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
     setStoneDetailsData({});
     setStoneDetailsCertified("No");
     setSelectedDesignStyles([]);
+  };
+
+  // Handle CSV file selection (product import)
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setCsvFile(file);
+  };
+
+  // Handle Variants CSV file selection
+  const handleVariantCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setVariantCsvFile(file);
+  };
+
+  // Handle +Import CSV (calls /import-necklace-product), then auto-download variants CSV on success
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      toast.error("Please select a CSV file");
+      return;
+    }
+    if (!csvFile.name.endsWith(".csv")) {
+      toast.error("Please select a valid CSV file");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("csv", csvFile);
+      const result = await importNecklaceProducts(formData).unwrap();
+      if (result.success) {
+        const data = result.data as any;
+        toast.success(
+          `CSV import completed! Created: ${data?.created ?? 0}, Skipped: ${data?.skipped ?? 0}, Errors: ${data?.errors ?? 0}`
+        );
+        if (data?.error_details?.length) {
+          console.error("Import errors:", data.error_details);
+          toast.error("Some rows had errors. Check console for details.");
+        }
+
+        // Auto-download necklace variants CSV after successful import
+        try {
+          const apiBase = getApiBaseUrl();
+          const token = localStorage.getItem("token") || "";
+          const createdProducts = Array.isArray(data?.created_products) ? data.created_products : [];
+          const createdIds = createdProducts
+            .map((p: any) => (typeof p?._id === "string" ? p._id : p?._id?.toString?.()))
+            .filter((id: string | undefined) => !!id);
+          const queryParam =
+            createdIds.length > 0 ? `?productIds=${encodeURIComponent(createdIds.join(","))}` : "";
+
+          const response = await fetch(
+            `${apiBase}/Admin/export-necklace-variants${queryParam}`,
+            {
+              method: "GET",
+              headers: { Authorization: token ? `Bearer ${token}` : "" },
+            }
+          );
+
+          if (!response.ok) throw new Error("Failed to download variants CSV");
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "necklace_variants.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+          toast.success("Variants CSV downloaded. Update prices and upload to update variants.");
+        } catch (downloadError) {
+          console.error("Error downloading variants CSV:", downloadError);
+          toast.error("Products imported, but failed to download variants CSV. Please try again.");
+        }
+
+        setCsvFile(null);
+        const fileInput = document.getElementById("necklace-csv-file-input") as HTMLInputElement;
+        if (fileInput) fileInput.value = "";
+        handleClose();
+        if (onSuccess) onSuccess();
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to import CSV");
+      console.error("Error importing necklace CSV:", error);
+    }
+  };
+
+  // Handle Import Variants CSV (update variant prices via /import-necklace-variants)
+  const handleVariantCsvImport = async () => {
+    if (!variantCsvFile) {
+      toast.error("Please select a Variants CSV file");
+      return;
+    }
+    if (!variantCsvFile.name.endsWith(".csv")) {
+      toast.error("Please select a valid CSV file for variants");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("csv", variantCsvFile);
+      const result = await importNecklaceVariants(formData).unwrap();
+      const data = result.data as any;
+      toast.success(
+        `Variants updated! Rows: ${data?.processed_rows ?? 0}, Updated variants: ${data?.updated_variants ?? 0}, Errors: ${data?.errors ?? 0}`
+      );
+      if (data?.error_details?.length) {
+        console.error("Variant import errors:", data.error_details);
+        toast.error("Some variant rows had errors. Check console for details.");
+      }
+      setVariantCsvFile(null);
+      const fileInput = document.getElementById("necklace-variant-csv-file-input") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+      if (onSuccess) onSuccess();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to import variants CSV and update prices");
+      console.error("Error importing necklace variants CSV:", error);
+    }
   };
 
   // Handle form submission
@@ -1215,6 +1332,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
       formData.append("gift", gift.toString());
       if (productDetails.trim()) formData.append("product_details", productDetails.trim());
       if (averageWidth.trim()) formData.append("average_width", averageWidth.trim());
+      if (averageLength.trim()) formData.append("average_length", averageLength.trim());
       formData.append("rhodium_plate", rhodiumPlate);
 
       // Center Stone Details (independent stone selection)
@@ -2017,32 +2135,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                 </div>
               </div>
             </div>
-            {/* Radio Button Fields - Single Select */}
-            <div className="mb-3">
-              <label className="form-label text-black">Assembly Type *</label>
-              <div>
-                {assemblyTypes.length > 0 ? (
-                  assemblyTypes.map((item) => (
-                    <div className="form-check form-check-inline" key={item._id}>
-                      <input
-                        className="form-check-input"
-                        type="radio"
-                        name="settingConfigurations"
-                        id={`assemblyType-${item._id}`}
-                        value={item._id}
-                        checked={settingConfigurations === item._id}
-                        onChange={(e) => setSettingConfigurations(e.target.value)}
-                      />
-                      <label className="form-check-label text-black" htmlFor={`assemblyType-${item._id}`}>
-                        {item.displayName}
-                      </label>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-muted">Loading assembly types...</div>
-                )}
-              </div>
-            </div>
 
             <div className="mb-3">
               <label className="form-label text-black">Carat Weight</label>
@@ -2400,7 +2492,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               {/* Ring Size dropdown - only when Ring is selected */}
               {sizeType === "ring" && (
                 <div className="mb-3 ddr-width" ref={ringSizeDropdownRef}>
-                  <label className="dropdown-label text-black">Necklace Size</label>
+                  <label className="dropdown-label text-black">Length</label>
                   <div className={`dropdown ${ringSizeDropdownOpen ? "active" : ""}`}>
                     <div
                       className="dropdown-select"
@@ -2476,7 +2568,57 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               )}
             </div>
 
+            <div className="mb-3">
+              <label className="form-label text-black">Size Scale</label>
+              <div>
+                {sizeScales.length > 0 ? (
+                  sizeScales.map((item) => (
+                    <div className="form-check form-check-inline" key={item._id}>
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="sizeScale"
+                        id={`sizeScale-${item._id}`}
+                        value={item._id}
+                        checked={sizeScale === item._id}
+                        onChange={(e) => setSizeScale(e.target.value)}
+                      />
+                      <label className="form-check-label text-black" htmlFor={`sizeScale-${item._id}`}>
+                        {item.displayName}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-muted">Loading size scales...</span>
+                )}
+              </div>
+            </div>
 
+            <div className="mb-3">
+              <label className="form-label text-black">Assembly Type *</label>
+              <div>
+                {assemblyTypes.length > 0 ? (
+                  assemblyTypes.map((item) => (
+                    <div className="form-check form-check-inline" key={item._id}>
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="settingConfigurations"
+                        id={`assemblyType-${item._id}`}
+                        value={item._id}
+                        checked={settingConfigurations === item._id}
+                        onChange={(e) => setSettingConfigurations(e.target.value)}
+                      />
+                      <label className="form-check-label text-black" htmlFor={`assemblyType-${item._id}`}>
+                        {item.displayName}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-muted">Loading assembly types...</div>
+                )}
+              </div>
+            </div>
 
             <div className="mb-3">
               <label className="form-label text-black">Chain Type *</label>
@@ -2504,6 +2646,7 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               </div>
             </div>
 
+            {/* Style (Sub-Category linked) - commented out
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={styleSubCategoryDropdownRef}>
                 <label className="dropdown-label text-black">Style (Sub-Category linked)</label>
@@ -2560,10 +2703,10 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                 </div>
               </div>
             </div>
-
+            */}
 
             <div className="mb-3">
-              <label className="form-label text-black">Lock (ClosureType linked)</label>
+              <label className="form-label text-black">Closure Type</label>
               <div>
                 {closureTypes.length > 0 ? (
                   closureTypes.map((item) => (
@@ -2841,28 +2984,6 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               </div>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label text-black">Size Scale</label>
-              <div>
-                {sizeScaleStatic.map((item) => (
-                  <div className="form-check form-check-inline" key={item.id}>
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="sizeScale"
-                      id={`sizeScale-${item.id}`}
-                      value={item.value}
-                      checked={sizeScale === item.value}
-                      onChange={(e) => setSizeScale(e.target.value)}
-                    />
-                    <label className="form-check-label text-black" htmlFor={`sizeScale-${item.id}`}>
-                      {item.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Engraving Checkbox */}
             <div className="mb-3">
               <div className="form-check">
@@ -2926,6 +3047,18 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
                       placeholder="Dimmensions"
                       value={averageWidth}
                       onChange={(e) => setAverageWidth(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Average Length */}
+                  <div className="mb-3">
+                    <label className="form-label text-black">Average Length</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter Average Length"
+                      value={averageLength}
+                      onChange={(e) => setAverageLength(e.target.value)}
                     />
                   </div>
 
@@ -3968,15 +4101,71 @@ function AddNecklaceProduct({ show, handleClose, categories = [], subCategories 
               )}
             </div>
 
-
-
-            <button
-              className="btn w-100 mt-3 submit-background"
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? "Submitting..." : "Submit"}
-            </button>
+            <div className="d-flex gap-2 mt-3">
+              <button
+                className="btn flex-grow-1 submit-background"
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? "Submitting..." : "Submit"}
+              </button>
+              <div className="flex-grow-1">
+                <input
+                  type="file"
+                  id="necklace-csv-file-input"
+                  accept=".csv"
+                  onChange={handleCsvFileChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="btn w-100"
+                  type="button"
+                  onClick={() => document.getElementById("necklace-csv-file-input")?.click()}
+                  style={{ backgroundColor: "#6f42c1", color: "white", border: "none" }}
+                >
+                  {csvFile ? `Selected: ${csvFile.name}` : "+Import CSV"}
+                </button>
+                {csvFile && (
+                  <button
+                    className="btn w-100 mt-2"
+                    type="button"
+                    onClick={handleCsvImport}
+                    disabled={isImporting}
+                    style={{ backgroundColor: "#28a745", color: "white", border: "none" }}
+                  >
+                    {isImporting ? "Importing..." : "Upload CSV"}
+                  </button>
+                )}
+              </div>
+              <div className="flex-grow-1">
+                <input
+                  type="file"
+                  id="necklace-variant-csv-file-input"
+                  accept=".csv"
+                  onChange={handleVariantCsvFileChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="btn w-100"
+                  type="button"
+                  onClick={() => document.getElementById("necklace-variant-csv-file-input")?.click()}
+                  style={{ backgroundColor: "#17a2b8", color: "white", border: "none" }}
+                >
+                  {variantCsvFile ? `Selected: ${variantCsvFile.name}` : "Import Variants CSV"}
+                </button>
+                {variantCsvFile && (
+                  <button
+                    className="btn w-100 mt-2"
+                    type="button"
+                    onClick={handleVariantCsvImport}
+                    disabled={isImportingVariants}
+                    style={{ backgroundColor: "#138496", color: "white", border: "none" }}
+                  >
+                    {isImportingVariants ? "Updating Variants..." : "Upload & Update Variants"}
+                  </button>
+                )}
+              </div>
+            </div>
           </form>
         </div>
       </Modal.Body>

@@ -38,6 +38,9 @@ export const productAttributesApi = apiSlice.injectEndpoints({
     getBandFits: builder.query<ProductAttributeResponse, void>({
       query: () => '/Admin/getBandFits',
     }),
+    getSizeScales: builder.query<ProductAttributeResponse, void>({
+      query: () => '/Admin/getSizeScales',
+    }),
     getFlexibilityTypes: builder.query<ProductAttributeResponse, void>({
       query: () => '/Admin/getFlexibilityTypes',
     }),
@@ -109,6 +112,7 @@ export const {
   useGetBandProfileShapesQuery,
   useGetBandWidthCategoriesQuery,
   useGetBandFitsQuery,
+  useGetSizeScalesQuery,
   useGetFlexibilityTypesQuery,
   useGetProductSpecialsQuery,
   useGetCollectionsQuery,

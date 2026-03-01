@@ -1,6 +1,9 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
+const baseUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8081/api/v1';
+
+/** Base URL for API requests (used by fetch for file downloads) */
+export const getApiBaseUrl = () => baseUrl + '/api/v1';
 
 // Get token from localStorage
 const getToken = () => {

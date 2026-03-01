@@ -156,6 +156,54 @@ export const productApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Product'],
     }),
+    importBraceletProducts: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/import-bracelet-product',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
+    importBraceletVariants: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/import-bracelet-variants',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
+    importNecklaceProducts: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/import-necklace-product',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
+    importNecklaceVariants: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/import-necklace-variants',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
+    importEarringsProducts: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/import-earrings-product',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
+    importEarringsVariants: builder.mutation<ProductResponse, FormData>({
+      query: (formData) => ({
+        url: '/Admin/import-earrings-variants',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Product'],
+    }),
     updateProduct: builder.mutation<ProductResponse, { id: string; formData: FormData }>({
       query: ({ id, formData }) => ({
         url: `/Admin/updateProduct/${id}`,
@@ -184,6 +232,12 @@ export const {
   useCreateEarringsProductMutation,
   useImportRingProductsMutation,
   useImportRingVariantsMutation,
+  useImportBraceletProductsMutation,
+  useImportBraceletVariantsMutation,
+  useImportNecklaceProductsMutation,
+  useImportNecklaceVariantsMutation,
+  useImportEarringsProductsMutation,
+  useImportEarringsVariantsMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productApi;

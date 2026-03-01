@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Modal from "react-bootstrap/Modal";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useCreateBraceletProductMutation } from "../../store/api/productApi";
+import { useCreateBraceletProductMutation, useImportBraceletProductsMutation, useImportBraceletVariantsMutation } from "../../store/api/productApi";
+import { getApiBaseUrl } from "../../store/api/apiSlice";
 import {
   useGetSettingConfigurationsQuery,
   useGetShankConfigurationsQuery,
@@ -18,6 +19,8 @@ import {
   useGetClosureTypesQuery,
   useGetStoneSettingsQuery,
   useGetPlacementFitsQuery,
+  useGetFinishDetailsQuery,
+  useGetSizeScalesQuery,
 } from "../../store/api/productAttributesApi";
 import { useGetSubSubCategoriesQuery } from "../../store/api/subSubCategoryApi";
 import { toast } from "sonner";
@@ -219,6 +222,12 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
 
   // Loading state
   const [createBraceletProduct, { isLoading }] = useCreateBraceletProductMutation();
+  const [importBraceletProducts, { isLoading: isImporting }] = useImportBraceletProductsMutation();
+  const [importBraceletVariants, { isLoading: isImportingVariants }] = useImportBraceletVariantsMutation();
+
+  // CSV Import state
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [variantCsvFile, setVariantCsvFile] = useState<File | null>(null);
 
   // Fetch product attributes
   const { data: settingConfigurationsData } = useGetSettingConfigurationsQuery();
@@ -236,6 +245,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   const { data: closureTypesData } = useGetClosureTypesQuery();
   const { data: stoneSettingsData } = useGetStoneSettingsQuery();
   const { data: placementFitsData } = useGetPlacementFitsQuery();
+  const { data: finishDetailsData } = useGetFinishDetailsQuery();
+  const { data: sizeScalesData } = useGetSizeScalesQuery();
 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const subCategoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -342,25 +353,8 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
   const closureTypes = (closureTypesData?.data as any[]) || [];
   const stoneSettings = (stoneSettingsData?.data as any[]) || [];
   const placementFits = (placementFitsData?.data as any[]) || [];
-
-  const finishDetailStatic = [
-    { id: 1, label: "Polished", value: "polished" },
-    { id: 2, label: "Brushed", value: "brushed" },
-    { id: 3, label: "Matte", value: "matte" },
-    { id: 4, label: "Hammered", value: "hammered" },
-    { id: 5, label: "Satin", value: "satin" },
-    { id: 6, label: "Textured", value: "textured" },
-  ];
-
-
-  const sizeScaleStatic = [
-    { id: 1, label: "US", value: "us" },
-    { id: 2, label: "UK", value: "uk" },
-    { id: 3, label: "EU", value: "eu" },
-    { id: 4, label: "AU", value: "au" },
-    { id: 5, label: "JP", value: "jp" },
-    { id: 6, label: "CN", value: "cn" },
-  ];
+  const finishDetails = (finishDetailsData?.data as any[]) || [];
+  const sizeScales = (sizeScalesData?.data as any[]) || [];
 
   const ringSizeStatic = ["8", "12", "14", "16", "18", "20", "22", "24", "28"];
   const necklaceSizeStatic = ["16\"", "18\"", "20\"", "22\"", "24\""];
@@ -1071,6 +1065,122 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
     setSelectedDesignStyles([]);
   };
 
+  // Handle CSV file selection (product import)
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setCsvFile(file);
+  };
+
+  // Handle Variants CSV file selection
+  const handleVariantCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setVariantCsvFile(file);
+  };
+
+  // Handle +Import CSV (calls /import-bracelet-product)
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      toast.error("Please select a CSV file");
+      return;
+    }
+    if (!csvFile.name.endsWith(".csv")) {
+      toast.error("Please select a valid CSV file");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("csv", csvFile);
+      const result = await importBraceletProducts(formData).unwrap();
+      if (result.success) {
+        const data = result.data as any;
+        toast.success(
+          `CSV import completed! Created: ${data?.created ?? 0}, Skipped: ${data?.skipped ?? 0}, Errors: ${data?.errors ?? 0}`
+        );
+        if (data?.error_details?.length) {
+          console.error("Import errors:", data.error_details);
+          toast.error("Some rows had errors. Check console for details.");
+        }
+
+        // Auto-download variants CSV after successful import
+        try {
+          const apiBase = getApiBaseUrl();
+          const token = localStorage.getItem("token") || "";
+          const createdProducts = Array.isArray(data?.created_products) ? data.created_products : [];
+          const createdIds = createdProducts
+            .map((p: any) => (typeof p?._id === "string" ? p._id : p?._id?.toString?.()))
+            .filter((id: string | undefined) => !!id);
+          const queryParam =
+            createdIds.length > 0 ? `?productIds=${encodeURIComponent(createdIds.join(","))}` : "";
+
+          const response = await fetch(
+            `${apiBase}/Admin/export-bracelet-variants${queryParam}`,
+            {
+              method: "GET",
+              headers: { Authorization: token ? `Bearer ${token}` : "" },
+            }
+          );
+
+          if (!response.ok) throw new Error("Failed to download variants CSV");
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "bracelet_variants.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+          toast.success("Variants CSV downloaded. Update prices and upload to update variants.");
+        } catch (downloadError) {
+          console.error("Error downloading variants CSV:", downloadError);
+          toast.error("Products imported, but failed to download variants CSV. Please try again.");
+        }
+
+        setCsvFile(null);
+        const fileInput = document.getElementById("bracelet-csv-file-input") as HTMLInputElement;
+        if (fileInput) fileInput.value = "";
+        handleClose();
+        if (onSuccess) onSuccess();
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to import CSV");
+      console.error("Error importing bracelet CSV:", error);
+    }
+  };
+
+  // Handle Import Variants CSV (update variant prices via /import-bracelet-variants)
+  const handleVariantCsvImport = async () => {
+    if (!variantCsvFile) {
+      toast.error("Please select a Variants CSV file");
+      return;
+    }
+    if (!variantCsvFile.name.endsWith(".csv")) {
+      toast.error("Please select a valid CSV file for variants");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("csv", variantCsvFile);
+      const result = await importBraceletVariants(formData).unwrap();
+      const data = result.data as any;
+      toast.success(
+        `Variants updated! Rows: ${data?.processed_rows ?? 0}, Updated variants: ${data?.updated_variants ?? 0}, Errors: ${data?.errors ?? 0}`
+      );
+      if (data?.error_details?.length) {
+        console.error("Variant import errors:", data.error_details);
+        toast.error("Some variant rows had errors. Check console for details.");
+      }
+      setVariantCsvFile(null);
+      const fileInput = document.getElementById("bracelet-variant-csv-file-input") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+      if (onSuccess) onSuccess();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to import variants CSV and update prices");
+      console.error("Error importing bracelet variants CSV:", error);
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1365,8 +1475,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
       }
 
       // Multi-select dropdown fields (array of ObjectIds)
-      // shankTreatments is not needed for bracelets - removed
-      // shankTreatments.forEach((id) => formData.append("shankTreatments", id));
+      shankTreatments.forEach((id) => formData.append("finishDetails", id));
       styles.forEach((id) => formData.append("styles", id));
       settingFeatures.forEach((id) => formData.append("settingFeatures", id));
       motifThemes.forEach((id) => formData.append("motifThemes", id));
@@ -2035,28 +2144,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                 </div>
               </div>
             </div>
-            {/* Radio Button Fields - Single Select */}
-            <div className="mb-3">
-              <label className="form-label text-black">Flexibility Type *</label>
-              <div>
-                {flexibilityTypes.map((item) => (
-                  <div className="form-check form-check-inline" key={item._id}>
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="settingConfigurations"
-                      id={`flexibilityType-${item._id}`}
-                      value={item._id}
-                      checked={settingConfigurations === item._id}
-                      onChange={(e) => setSettingConfigurations(e.target.value)}
-                    />
-                    <label className="form-check-label text-black" htmlFor={`flexibilityType-${item._id}`}>
-                      {item.displayName}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             <div className="mb-3">
               <label className="form-label text-black">Carat Weight</label>
@@ -2273,7 +2360,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
               {/* Ring Size dropdown - only when Ring is selected */}
               {sizeType === "ring" && (
                 <div className="mb-3 ddr-width" ref={ringSizeDropdownRef}>
-                  <label className="dropdown-label text-black">Bracelet Size</label>
+                  <label className="dropdown-label text-black">Length</label>
                   <div className={`dropdown ${ringSizeDropdownOpen ? "active" : ""}`}>
                     <div
                       className="dropdown-select"
@@ -2349,7 +2436,53 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
               )}
             </div>
 
+            <div className="mb-3">
+              <label className="form-label text-black">Size Scale</label>
+              <div>
+                {sizeScales.length > 0 ? (
+                  sizeScales.map((item) => (
+                    <div className="form-check form-check-inline" key={item._id}>
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="sizeScale"
+                        id={`sizeScale-${item._id}`}
+                        value={item._id}
+                        checked={sizeScale === item._id}
+                        onChange={(e) => setSizeScale(e.target.value)}
+                      />
+                      <label className="form-check-label text-black" htmlFor={`sizeScale-${item._id}`}>
+                        {item.displayName}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-muted">Loading size scales...</span>
+                )}
+              </div>
+            </div>
 
+            <div className="mb-3">
+              <label className="form-label text-black">Flexibility Type *</label>
+              <div>
+                {flexibilityTypes.map((item) => (
+                  <div className="form-check form-check-inline" key={item._id}>
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="settingConfigurations"
+                      id={`flexibilityType-${item._id}`}
+                      value={item._id}
+                      checked={settingConfigurations === item._id}
+                      onChange={(e) => setSettingConfigurations(e.target.value)}
+                    />
+                    <label className="form-check-label text-black" htmlFor={`flexibilityType-${item._id}`}>
+                      {item.displayName}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div className="mb-3">
               <label className="form-label text-black">Chain Link Type *</label>
@@ -2373,6 +2506,7 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
               </div>
             </div>
 
+            {/* Style (Sub-Category linked) - commented out
             <div className="dropdown-multi">
               <div className="mb-3 ddr-width" ref={styleSubCategoryDropdownRef}>
                 <label className="dropdown-label text-black">Style (Sub-Category linked)</label>
@@ -2429,10 +2563,10 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                 </div>
               </div>
             </div>
-
+            */}
 
             <div className="mb-3">
-              <label className="form-label text-black">Lock (ClosureType linked) *</label>
+              <label className="form-label text-black">Closure Type</label>
               <div>
                 {closureTypes.map((item) => (
                   <div className="form-check form-check-inline" key={item._id}>
@@ -2530,20 +2664,24 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                   </div>
                   {shankTreatmentsDropdownOpen && (
                     <div className="dropdown-list">
-                      {finishDetailStatic.map((item) => (
-                        <label className="dropdown-item" key={item.id}>
-                          <input
-                            type="checkbox"
-                            value={item.value}
-                            checked={shankTreatments.includes(item.value)}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              toggleShankTreatment(item.value);
-                            }}
-                          />
-                          {item.label}
-                        </label>
-                      ))}
+                      {finishDetails.length > 0 ? (
+                        finishDetails.map((item) => (
+                          <label className="dropdown-item" key={item._id}>
+                            <input
+                              type="checkbox"
+                              value={item._id}
+                              checked={shankTreatments.includes(item._id)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleShankTreatment(item._id);
+                              }}
+                            />
+                            {item.displayName}
+                          </label>
+                        ))
+                      ) : (
+                        <div className="dropdown-item">Loading finish details...</div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2691,28 +2829,6 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label text-black">Size Scale</label>
-              <div>
-                {sizeScaleStatic.map((item) => (
-                  <div className="form-check form-check-inline" key={item.id}>
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="sizeScale"
-                      id={`sizeScale-${item.id}`}
-                      value={item.value}
-                      checked={sizeScale === item.value}
-                      onChange={(e) => setSizeScale(e.target.value)}
-                    />
-                    <label className="form-check-label text-black" htmlFor={`sizeScale-${item.id}`}>
-                      {item.label}
-                    </label>
-                  </div>
-                ))}
               </div>
             </div>
 
@@ -3796,13 +3912,71 @@ function AddBraceletsProduct({ show, handleClose, categories = [], subCategories
 
 
 
-            <button
-              className="btn w-100 mt-3 submit-background"
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? "Submitting..." : "Submit"}
-            </button>
+            <div className="d-flex gap-2 mt-3">
+              <button
+                className="btn flex-grow-1 submit-background"
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? "Submitting..." : "Submit"}
+              </button>
+              <div className="flex-grow-1">
+                <input
+                  type="file"
+                  id="bracelet-csv-file-input"
+                  accept=".csv"
+                  onChange={handleCsvFileChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="btn w-100"
+                  type="button"
+                  onClick={() => document.getElementById("bracelet-csv-file-input")?.click()}
+                  style={{ backgroundColor: "#6f42c1", color: "white", border: "none" }}
+                >
+                  {csvFile ? `Selected: ${csvFile.name}` : "+Import CSV"}
+                </button>
+                {csvFile && (
+                  <button
+                    className="btn w-100 mt-2"
+                    type="button"
+                    onClick={handleCsvImport}
+                    disabled={isImporting}
+                    style={{ backgroundColor: "#28a745", color: "white", border: "none" }}
+                  >
+                    {isImporting ? "Importing..." : "Upload CSV"}
+                  </button>
+                )}
+              </div>
+              <div className="flex-grow-1">
+                <input
+                  type="file"
+                  id="bracelet-variant-csv-file-input"
+                  accept=".csv"
+                  onChange={handleVariantCsvFileChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="btn w-100"
+                  type="button"
+                  onClick={() => document.getElementById("bracelet-variant-csv-file-input")?.click()}
+                  style={{ backgroundColor: "#17a2b8", color: "white", border: "none" }}
+                >
+                  {variantCsvFile ? `Selected: ${variantCsvFile.name}` : "Import Variants CSV"}
+                </button>
+                {variantCsvFile && (
+                  <button
+                    className="btn w-100 mt-2"
+                    type="button"
+                    onClick={handleVariantCsvImport}
+                    disabled={isImportingVariants}
+                    style={{ backgroundColor: "#138496", color: "white", border: "none" }}
+                  >
+                    {isImportingVariants ? "Updating Variants..." : "Upload & Update Variants"}
+                  </button>
+                )}
+              </div>
+            </div>
           </form>
         </div>
       </Modal.Body>
