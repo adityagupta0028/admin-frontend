@@ -1,7 +1,24 @@
 import { apiSlice } from './apiSlice';
 
+export interface ProductVariant {
+  diamond_type: string;
+  carat_weight: string;
+  metal_type: string;
+  diamond_quality?: string;
+  shape?: string;
+  price: number;
+  discounted_price: number;
+}
+
+export interface ProductMetalImage {
+  metal_type: string;
+  shape?: string;
+  view_angle: string;
+  image: string;
+}
+
 export interface Product {
-  variants: any;
+  variants?: ProductVariant[];
   _id: string;
   product_id: string;
   product_name: string;
@@ -54,11 +71,7 @@ export interface Product {
   stone_details?: string;
   images: string[];
   videos?: string[];
-  metal_images?: Array<{
-    metal_type: string;
-    view_angle: string;
-    image: string;
-  }>;
+  metal_images?: ProductMetalImage[];
   status: string;
   tags?: string[];
   isDeleted: boolean;

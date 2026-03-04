@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   Table,
@@ -56,6 +56,9 @@ import {
   useUpdateProductMutation,
   useDeleteProductMutation,
   Product,
+  ProductVariant,
+  ProductMetalImage,
+  useGetProductDetailQuery,
 } from "../../store/api/productApi";
 import { useGetCategoriesQuery } from "../../store/api/categoryApi";
 import { useGetSubCategoriesQuery } from "../../store/api/subCategoryApi";
@@ -72,7 +75,7 @@ interface ProductFormData {
   product_name: string;
   description?: string;
   original_price?: number;
-  discounted_price: number;
+  discounted_price?: number;
   discount_label?: string;
   promotion_label?: string;
   metal_type: string[]; // multiple
@@ -103,6 +106,35 @@ interface ProductFormData {
   images?: FileList;
 }
 
+type EditableVariantRow = ProductVariant & {
+  // Ensure price fields are always numbers for editing
+  price: number;
+  discounted_price: number;
+};
+
+type MetalImageUpload = {
+  metal_type: string;
+  shape?: string;
+  view_angle: string;
+  file: File;
+};
+
+type CenterStoneConfigItem = {
+  stone: string;
+  diamond_origin?: string;
+  diamond_shapes?: string[];
+  min_diamond_weight?: string;
+  quantity?: string;
+  average_color?: string;
+  color_quality?: string;
+  average_clarity?: string;
+  dimensions?: string;
+  gemstone_type?: string;
+  holding_methods?: string[];
+};
+
+type SideStoneConfigItem = CenterStoneConfigItem;
+
 export function ProductManagement() {
   const [isTypeSelectorOpen, setIsTypeSelectorOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -125,6 +157,18 @@ export function ProductManagement() {
   const [newCaratWeight, setNewCaratWeight] = useState<string>("");
   const [newRingSize, setNewRingSize] = useState<string>("");
   const [newNecklaceSize, setNewNecklaceSize] = useState<string>("");
+
+  // Product details configuration (edit)
+  const [editProductDetails, setEditProductDetails] = useState<string>("");
+  const [editAverageWidth, setEditAverageWidth] = useState<string>("");
+  const [editRhodiumPlate, setEditRhodiumPlate] = useState<"Yes" | "No">("Yes");
+
+  // Variants & metal images for edit modal
+  const [variantRows, setVariantRows] = useState<EditableVariantRow[]>([]);
+  const [existingMetalImages, setExistingMetalImages] = useState<ProductMetalImage[]>([]);
+  const [metalImageUploads, setMetalImageUploads] = useState<MetalImageUpload[]>([]);
+  const [centerStoneConfig, setCenterStoneConfig] = useState<CenterStoneConfigItem[]>([]);
+  const [sideStoneConfig, setSideStoneConfig] = useState<SideStoneConfigItem[]>([]);
   // API hooks
   const { data: categoriesResponse } = useGetCategoriesQuery();
   const { data: subCategoriesResponse } = useGetSubCategoriesQuery(
@@ -158,7 +202,6 @@ export function ProductManagement() {
       product_id: "",
       product_name: "",
       description: "",
-      discounted_price: 0,
       metal_type: [],
       diamond_origin: [],
       diamond_quality: [],
@@ -308,120 +351,205 @@ export function ProductManagement() {
     }
   };
 
+  const populateEditFormFromProduct = useCallback(
+    (product: Product) => {
+      // Category / Subcategory ids (single category now)
+      const categoryId = Array.isArray(product.categoryId)
+        ? product.categoryId.length > 0
+          ? typeof product.categoryId[0] === "string"
+            ? product.categoryId[0]
+            : (product.categoryId[0] as any)._id
+          : ""
+        : typeof product.categoryId === "string"
+        ? (product.categoryId as string)
+        : ((product.categoryId as any)?._id as string) || "";
+
+      const subCategoryIds = Array.isArray(product.subCategoryId)
+        ? product.subCategoryId.map((sub: any) =>
+            typeof sub === "string" ? sub : sub._id
+          )
+        : product.subCategoryId
+        ? [
+            typeof product.subCategoryId === "string"
+              ? product.subCategoryId
+              : (product.subCategoryId as any)._id,
+          ]
+        : [];
+
+      setValue("product_id", product.product_id);
+      setValue("product_name", product.product_name);
+      setValue("description", product.description || "");
+      setValue("original_price", product.original_price);
+      setValue("discounted_price", product.discounted_price);
+      setValue("discount_label", product.discount_label || "");
+      setValue("promotion_label", product.promotion_label || "");
+
+      // Array fields
+      const metalTypesArray = Array.isArray(product.metal_type)
+        ? product.metal_type
+        : product.metal_type
+        ? [product.metal_type as string]
+        : [];
+      setValue("metal_type", metalTypesArray);
+
+      const diamondOriginsArray = Array.isArray(product.diamond_origin)
+        ? product.diamond_origin
+        : product.diamond_origin
+        ? [product.diamond_origin as string]
+        : [];
+      setValue("diamond_origin", diamondOriginsArray);
+
+      const caratWeightsArray = Array.isArray(product.carat_weight)
+        ? (product.carat_weight as number[])
+        : product.carat_weight !== undefined
+        ? [product.carat_weight as number]
+        : [];
+      setCaratWeights(caratWeightsArray);
+      setValue("carat_weight", caratWeightsArray);
+
+      const diamondQualitiesArray = Array.isArray(product.diamond_quality)
+        ? product.diamond_quality
+        : product.diamond_quality
+        ? [product.diamond_quality as string]
+        : [];
+      setValue("diamond_quality", diamondQualitiesArray);
+
+      const ringSizesArray = Array.isArray(product.ring_size)
+        ? (product.ring_size as number[])
+        : product.ring_size !== undefined
+        ? [product.ring_size as number]
+        : [];
+      setRingSizes(ringSizesArray);
+      setValue("ring_size", ringSizesArray);
+
+      const necklaceSizesArray = Array.isArray(product.necklace_size)
+        ? (product.necklace_size as string[])
+        : product.necklace_size
+        ? [product.necklace_size as string]
+        : [];
+      setNecklaceSizes(necklaceSizesArray);
+      setValue("necklace_size", necklaceSizesArray);
+
+      setValue("metal_code", product.metal_code || "");
+      setValue("metal_price", product.metal_price);
+      setValue("diamond_color_grade", product.diamond_color_grade || "");
+      setValue("diamond_clarity_grade", product.diamond_clarity_grade || "");
+      setValue("engraving_text", product.engraving_text || "");
+      setValue("engraving_allowed", product.engraving_allowed);
+      setValue("back_type", product.back_type || "");
+      setValue("matching_band_available", product.matching_band_available);
+      setValue(
+        "matching_band_product_id",
+        product.matching_band_product_id || null
+      );
+      setValue("product_type", product.product_type || "");
+      setValue("collection_name", product.collection_name || "");
+      setValue("product_details", product.product_details || "");
+      setValue("center_stone_details", product.center_stone_details || "");
+      setValue("side_stone_details", product.side_stone_details || "");
+      setValue("stone_details", product.stone_details || "");
+      setValue("categoryId", categoryId);
+      setValue("subCategoryId", subCategoryIds);
+      setValue("status", product.status);
+      if (product.tags)
+        setValue(
+          "tags",
+          Array.isArray(product.tags) ? product.tags.join(", ") : product.tags
+        );
+
+      setSelectedCategoryId(categoryId);
+
+      // Product details configuration
+      const pdConfig: any = (product as any).productDetailsConfiguration || {};
+      setEditProductDetails(
+        pdConfig.product_details || product.product_details || ""
+      );
+      setEditAverageWidth(pdConfig.average_width || "");
+      setEditRhodiumPlate((pdConfig.rhodium_plate as "Yes" | "No") || "Yes");
+
+      // Center / Side stone configurations (advanced)
+      const rawCenter = (product as any).centerStoneDetailsConfiguration || [];
+      const rawSide = (product as any).sideStoneDetailsConfiguration || [];
+      setCenterStoneConfig(
+        Array.isArray(rawCenter)
+          ? rawCenter.map((c: any) => ({
+              stone: c.stone,
+              diamond_origin: c.diamond_origin || "",
+              diamond_shapes: c.diamond_shapes || [],
+              min_diamond_weight: c.min_diamond_weight || "",
+              quantity: c.quantity || "",
+              average_color: c.average_color || "",
+              color_quality: c.color_quality || "",
+              average_clarity: c.average_clarity || "",
+              dimensions: c.dimensions || "",
+              gemstone_type: c.gemstone_type || "",
+              holding_methods: c.holding_methods || [],
+            }))
+          : []
+      );
+      setSideStoneConfig(
+        Array.isArray(rawSide)
+          ? rawSide.map((c: any) => ({
+              stone: c.stone,
+              diamond_origin: c.diamond_origin || "",
+              diamond_shapes: c.diamond_shapes || [],
+              min_diamond_weight: c.min_diamond_weight || "",
+              quantity: c.quantity || "",
+              average_color: c.average_color || "",
+              color_quality: c.color_quality || "",
+              average_clarity: c.average_clarity || "",
+              dimensions: c.dimensions || "",
+              gemstone_type: c.gemstone_type || "",
+              holding_methods: c.holding_methods || [],
+            }))
+          : []
+      );
+
+      // Variants (for editable prices)
+      const mappedVariants: EditableVariantRow[] = (product.variants || []).map(
+        (v: ProductVariant) => ({
+          diamond_type: v.diamond_type,
+          carat_weight: v.carat_weight,
+          metal_type: v.metal_type,
+          diamond_quality: v.diamond_quality || "",
+          shape: v.shape || "",
+          price: typeof v.price === "number" ? v.price : Number(v.price ?? 0),
+          discounted_price:
+            typeof v.discounted_price === "number"
+              ? v.discounted_price
+              : Number(v.discounted_price ?? 0),
+        })
+      );
+      setVariantRows(mappedVariants);
+
+      // Metal images (existing)
+      setExistingMetalImages(product.metal_images || []);
+      setMetalImageUploads([]);
+
+      // Existing images
+      if (product.images && product.images.length > 0) {
+        const previews = product.images.map((img) => getImageUrl(img));
+        setImagePreviews(previews);
+      } else {
+        setImagePreviews([]);
+      }
+    },
+    [
+      setValue,
+      setSelectedCategoryId,
+      setCaratWeights,
+      setRingSizes,
+      setNecklaceSizes,
+      setVariantRows,
+      setExistingMetalImages,
+      setMetalImageUploads,
+      setImagePreviews,
+    ]
+  );
+
   const handleEditClick = (product: Product) => {
     setSelectedProduct(product);
-
-    // Category / Subcategory ids (single category now)
-    const categoryId = Array.isArray(product.categoryId)
-      ? (product.categoryId.length > 0 
-          ? (typeof product.categoryId[0] === "string" ? product.categoryId[0] : product.categoryId[0]._id)
-          : "")
-      : (typeof product.categoryId === "string" ? product.categoryId : (product.categoryId as any)?._id || "");
-
-    const subCategoryIds = Array.isArray(product.subCategoryId)
-      ? product.subCategoryId.map((sub: any) =>
-          typeof sub === "string" ? sub : sub._id
-        )
-      : [
-          typeof product.subCategoryId === "string"
-            ? product.subCategoryId
-            : (product.subCategoryId as any)._id,
-        ];
-
-    setValue("product_id", product.product_id);
-    setValue("product_name", product.product_name);
-    setValue("description", product.description || "");
-    setValue("original_price", product.original_price);
-    setValue("discounted_price", product.discounted_price);
-    setValue("discount_label", product.discount_label || "");
-    setValue("promotion_label", product.promotion_label || "");
-
-    // Array fields
-    const metalTypesArray = Array.isArray(product.metal_type)
-      ? product.metal_type
-      : product.metal_type
-      ? [product.metal_type]
-      : [];
-    setValue("metal_type", metalTypesArray);
-
-    const diamondOriginsArray = Array.isArray(product.diamond_origin)
-      ? product.diamond_origin
-      : product.diamond_origin
-      ? [product.diamond_origin]
-      : [];
-    setValue("diamond_origin", diamondOriginsArray);
-
-    const caratWeightsArray = Array.isArray(product.carat_weight)
-      ? product.carat_weight
-      : product.carat_weight
-      ? [product.carat_weight]
-      : [];
-    setCaratWeights(caratWeightsArray);
-    setValue("carat_weight", caratWeightsArray);
-
-    const diamondQualitiesArray = Array.isArray(product.diamond_quality)
-      ? product.diamond_quality
-      : product.diamond_quality
-      ? [product.diamond_quality]
-      : [];
-    setValue("diamond_quality", diamondQualitiesArray);
-
-    const ringSizesArray = Array.isArray(product.ring_size)
-      ? product.ring_size
-      : product.ring_size
-      ? [product.ring_size]
-      : [];
-    setRingSizes(ringSizesArray);
-    setValue("ring_size", ringSizesArray);
-
-    const necklaceSizesArray = Array.isArray(product.necklace_size)
-      ? product.necklace_size
-      : product.necklace_size
-      ? [product.necklace_size]
-      : [];
-    setNecklaceSizes(necklaceSizesArray);
-    setValue("necklace_size", necklaceSizesArray);
-
-    setValue("metal_code", product.metal_code || "");
-    setValue("metal_price", product.metal_price);
-    setValue("diamond_color_grade", product.diamond_color_grade || "");
-    setValue("diamond_clarity_grade", product.diamond_clarity_grade || "");
-    setValue("engraving_text", product.engraving_text || "");
-    setValue("engraving_allowed", product.engraving_allowed);
-    setValue("back_type", product.back_type || "");
-    setValue("matching_band_available", product.matching_band_available);
-    setValue(
-      "matching_band_product_id",
-      product.matching_band_product_id || null
-    );
-    setValue("product_type", product.product_type || "");
-    setValue("collection_name", product.collection_name || "");
-    setValue("product_details", product.product_details || "");
-    setValue("center_stone_details", product.center_stone_details || "");
-    setValue("side_stone_details", product.side_stone_details || "");
-    setValue("stone_details", product.stone_details || "");
-    setValue("categoryId", categoryId);
-    setValue("subCategoryId", subCategoryIds);
-    setValue("status", product.status);
-    if (product.tags)
-      setValue(
-        "tags",
-        Array.isArray(product.tags) ? product.tags.join(", ") : product.tags
-      );
-
-    setSelectedCategoryId(categoryId);
-
-    // Existing images
-    if (product.images && product.images.length > 0) {
-      const previews = product.images.map(
-        (img) =>
-          `${import.meta.env.VITE_API_URL || "http://localhost:8081"}${img}`
-      );
-      setImagePreviews(previews);
-    } else {
-      setImagePreviews([]);
-    }
-
+    populateEditFormFromProduct(product);
     setIsEditOpen(true);
   };
 
@@ -452,8 +580,12 @@ export function ProductManagement() {
       );
       if (data.metal_code !== undefined)
         formData.append("metal_code", data.metal_code || "");
-      if (data.metal_price !== undefined)
-        formData.append("metal_price", data.metal_price?.toString() || "");
+      if (typeof data.metal_price === "number" && !Number.isNaN(data.metal_price)) {
+        // Only send when > 0; if user clears or leaves as 0, omit so backend keeps existing
+        if (data.metal_price > 0) {
+          formData.append("metal_price", data.metal_price.toString());
+        }
+      }
 
       (data.diamond_origin || []).forEach((origin) =>
         formData.append("diamond_origin", origin)
@@ -517,25 +649,51 @@ export function ProductManagement() {
 
       if (data.product_details !== undefined)
         formData.append("product_details", data.product_details || "");
-      if (data.center_stone_details !== undefined)
-        formData.append(
-          "center_stone_details",
-          data.center_stone_details || ""
-        );
-      if (data.side_stone_details !== undefined)
-        formData.append(
-          "side_stone_details",
-          data.side_stone_details || ""
-        );
-      if (data.stone_details !== undefined)
-        formData.append("stone_details", data.stone_details || "");
-      if (data.status) formData.append("status", data.status);
+      // Advanced stone configuration fields are not editable in this UI anymore,
+      // so we avoid sending them to prevent validation errors and unintended updates.
+      if (data.status != null && data.status !== "")
+        formData.append("status", String(data.status));
       if (data.tags) formData.append("tags", data.tags);
+
+      // Variants - send updated prices as JSON (backend parses this)
+      if (variantRows.length > 0) {
+        const cleaned = variantRows
+          .filter(
+            (v) =>
+              typeof v.price === "number" &&
+              v.price > 0 &&
+              typeof v.discounted_price === "number" &&
+              v.discounted_price > 0
+          )
+          .map((v) => ({
+            diamond_type: v.diamond_type,
+            carat_weight: v.carat_weight,
+            metal_type: v.metal_type,
+            diamond_quality: v.diamond_quality || "",
+            shape: v.shape || "",
+            price: Number(v.price),
+            discounted_price: Number(v.discounted_price),
+          }));
+
+        if (cleaned.length > 0) {
+          formData.append("variants", JSON.stringify(cleaned));
+        }
+      }
 
       // New images
       if (data.images && data.images.length > 0) {
         Array.from(data.images).forEach((file) => {
           formData.append("images", file);
+        });
+      }
+
+      // Metal images - upload replacements if any were chosen
+      if (metalImageUploads.length > 0) {
+        metalImageUploads.forEach((entry) => {
+          const fieldName = `metal_images_${entry.metal_type.replace(/\s+/g, "_")}_${
+            (entry.shape || "").replace(/\s+/g, "_")
+          }_${entry.view_angle.replace(/\s+/g, "_")}`;
+          formData.append(fieldName, entry.file);
         });
       }
 
@@ -584,6 +742,14 @@ export function ProductManagement() {
     setNewCaratWeight("");
     setNewRingSize("");
     setNewNecklaceSize("");
+    setVariantRows([]);
+    setExistingMetalImages([]);
+    setMetalImageUploads([]);
+    setEditProductDetails("");
+    setEditAverageWidth("");
+    setEditRhodiumPlate("Yes");
+    setCenterStoneConfig([]);
+    setSideStoneConfig([]);
   };
 
   const handleCloseAdd = () => {
@@ -649,6 +815,20 @@ export function ProductManagement() {
   const watchedMatchingBand = watch("matching_band_available");
   const watchedProductType = watch("product_type");
   const watchedStatus = watch("status");
+
+  // Fetch full product detail when a product is selected for editing
+  const { data: productDetailResponse } = useGetProductDetailQuery(
+    selectedProduct?._id ?? "",
+    {
+      skip: !selectedProduct?._id,
+    }
+  );
+
+  useEffect(() => {
+    if (productDetailResponse && (productDetailResponse.data as any)?._id) {
+      populateEditFormFromProduct(productDetailResponse.data as Product);
+    }
+  }, [productDetailResponse, populateEditFormFromProduct]);
 
   return (
     <div>
@@ -789,12 +969,11 @@ export function ProductManagement() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        {product.variants.length > 0 &&
-                           (
-                            <span className="text-gray-400 line-through mr-2">
-                              ${product?.variants[0]?.price?.toFixed(2)}
-                            </span>
-                          )}
+                        {product.variants && product.variants.length > 0 && (
+                          <span className="text-gray-400 line-through mr-2">
+                            ${product.variants[0]?.price?.toFixed(2)}
+                          </span>
+                        )}
                        
                       </div>
                     </TableCell>
@@ -942,37 +1121,6 @@ export function ProductManagement() {
                   {...register("description")}
                   rows={3}
                 />
-              </div>
-
-              {/* Pricing */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit_original_price">Original Price</Label>
-                  <Input
-                    id="edit_original_price"
-                    type="number"
-                    step="0.01"
-                    {...register("original_price", { valueAsNumber: true })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit_discounted_price">
-                    Discounted Price
-                  </Label>
-                  <Input
-                    id="edit_discounted_price"
-                    type="number"
-                    step="0.01"
-                    {...register("discounted_price", { valueAsNumber: true })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit_discount_label">Discount Label</Label>
-                  <Input
-                    id="edit_discount_label"
-                    {...register("discount_label")}
-                  />
-                </div>
               </div>
 
               {/* Category & SubCategory */}
@@ -1378,53 +1526,161 @@ export function ProductManagement() {
                 />
               </div>
 
-              {/* Product Details */}
-              <div className="grid gap-2">
-                <Label htmlFor="edit_product_details">Product Details</Label>
-                <Textarea
-                  id="edit_product_details"
-                  {...register("product_details")}
-                  placeholder="Enter product details..."
-                  rows={4}
-                />
-              </div>
+              {/* Variants - editable price & discounted price */}
+              {variantRows.length > 0 && (
+                <div className="grid gap-2">
+                  <Label>Variants (Price Configuration)</Label>
+                  <p className="text-xs text-gray-500">
+                    Update price and discounted price for each variant. Other fields come from the
+                    original variant configuration.
+                  </p>
+                  <div className="overflow-x-auto border rounded-md">
+                    <table className="w-full text-xs md:text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-2 py-2 text-left font-semibold text-gray-700">
+                            Stone
+                          </th>
+                          <th className="px-2 py-2 text-left font-semibold text-gray-700">
+                            Carat
+                          </th>
+                          <th className="px-2 py-2 text-left font-semibold text-gray-700">
+                            Metal
+                          </th>
+                          <th className="px-2 py-2 text-left font-semibold text-gray-700">
+                            Diamond Quality
+                          </th>
+                          <th className="px-2 py-2 text-left font-semibold text-gray-700">
+                            Shape
+                          </th>
+                          <th className="px-2 py-2 text-left font-semibold text-gray-700">
+                            Price
+                          </th>
+                          <th className="px-2 py-2 text-left font-semibold text-gray-700">
+                            Discounted Price
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {variantRows.map((v, index) => (
+                          <tr key={`${v.metal_type}-${v.carat_weight}-${v.diamond_type}-${index}`}>
+                            <td className="px-2 py-1 whitespace-nowrap">{v.diamond_type}</td>
+                            <td className="px-2 py-1 whitespace-nowrap">{v.carat_weight}</td>
+                            <td className="px-2 py-1 whitespace-nowrap">{v.metal_type}</td>
+                            <td className="px-2 py-1 whitespace-nowrap">
+                              {v.diamond_quality || "-"}
+                            </td>
+                            <td className="px-2 py-1 whitespace-nowrap">{v.shape || "-"}</td>
+                            <td className="px-2 py-1 min-w-[110px]">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={Number.isNaN(v.price) ? "" : v.price}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const numeric =
+                                    value === "" ? Number.NaN : parseFloat(value);
+                                  setVariantRows((prev) =>
+                                    prev.map((row, i) =>
+                                      i === index ? { ...row, price: numeric } : row
+                                    )
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td className="px-2 py-1 min-w-[140px]">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={
+                                  Number.isNaN(v.discounted_price)
+                                    ? ""
+                                    : v.discounted_price
+                                }
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const numeric =
+                                    value === "" ? Number.NaN : parseFloat(value);
+                                  setVariantRows((prev) =>
+                                    prev.map((row, i) =>
+                                      i === index
+                                        ? { ...row, discounted_price: numeric }
+                                        : row
+                                    )
+                                  );
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
-              {/* Center Stone Details */}
-              <div className="grid gap-2">
-                <Label htmlFor="edit_center_stone_details">
-                  Center Stone Details
-                </Label>
-                <Textarea
-                  id="edit_center_stone_details"
-                  {...register("center_stone_details")}
-                  placeholder="Enter center stone details..."
-                  rows={4}
-                />
-              </div>
-
-              {/* Side Stone Details */}
-              <div className="grid gap-2">
-                <Label htmlFor="edit_side_stone_details">
-                  Side Stone Details
-                </Label>
-                <Textarea
-                  id="edit_side_stone_details"
-                  {...register("side_stone_details")}
-                  placeholder="Enter side stone details..."
-                  rows={4}
-                />
-              </div>
-
-              {/* Stone Details */}
-              <div className="grid gap-2">
-                <Label htmlFor="edit_stone_details">Stone Details</Label>
-                <Textarea
-                  id="edit_stone_details"
-                  {...register("stone_details")}
-                  placeholder="Enter stone details..."
-                  rows={4}
-                />
-              </div>
+              {/* Metal Images */}
+              {existingMetalImages.length > 0 && (
+                <div className="grid gap-2">
+                  <Label>Metal Images</Label>
+                  <p className="text-xs text-gray-500">
+                    Existing images by metal / shape / view angle. Uploading a new image will
+                    replace the current one for that combination when you save.
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {existingMetalImages.map((img, index) => {
+                      const key = `${img.metal_type}|${img.shape || ""}|${img.view_angle}|${index}`;
+                      const displayLabel = `${img.metal_type}${
+                        img.shape ? ` • ${img.shape}` : ""
+                      } • ${img.view_angle}`;
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-start gap-3 border rounded-md p-2 bg-white"
+                        >
+                          <div className="w-20 h-20 flex-shrink-0">
+                            <ImageWithFallback
+                              src={getImageUrl(img.image)}
+                              alt={displayLabel}
+                              className="w-full h-full object-cover rounded border"
+                            />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <p className="text-xs font-medium text-gray-800">{displayLabel}</p>
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const uploadKey = `${img.metal_type}|${img.shape || ""}|${
+                                  img.view_angle
+                                }`;
+                                setMetalImageUploads((prev) => {
+                                  const filtered = prev.filter(
+                                    (m) =>
+                                      `${m.metal_type}|${m.shape || ""}|${m.view_angle}` !==
+                                      uploadKey
+                                  );
+                                  return [
+                                    ...filtered,
+                                    {
+                                      metal_type: img.metal_type,
+                                      shape: img.shape,
+                                      view_angle: img.view_angle,
+                                      file,
+                                    },
+                                  ];
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Images */}
               <div className="grid gap-2">
