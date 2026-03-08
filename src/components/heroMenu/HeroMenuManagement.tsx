@@ -46,6 +46,9 @@ interface FilterTypeConfig {
   label: string;
 }
 
+// Hero Menu category ID that displays as "Jewellery" in UI (backend category: Earring)
+const HERO_MENU_JEWELLERY_CATEGORY_ID = "69468b5a25a47dcbe1667e35";
+
 const filterTypes: FilterTypeConfig[] = [
   { key: "settingConfigurations", label: "Setting Configurations" },
   { key: "shankConfigurations", label: "Shank Configurations" },
@@ -305,7 +308,7 @@ export function HeroMenuManagement() {
               <SelectContent>
                 {categories.map((category) => (
                   <SelectItem key={category._id} value={category._id}>
-                    {category.categoryName}
+                    {category._id === HERO_MENU_JEWELLERY_CATEGORY_ID ? "Jewellery" : category.categoryName}
                   </SelectItem>
                 ))}
               </SelectContent>

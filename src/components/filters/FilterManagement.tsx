@@ -90,6 +90,9 @@ const heroMenuItems = [
   "Jewellery"
 ];
 
+// Hero Menu category ID that displays as "Jewellery" in UI (backend category: Earring)
+const HERO_MENU_JEWELLERY_CATEGORY_ID = "69468b5a25a47dcbe1667e35";
+
 // Filter type configuration
 interface FilterTypeConfig {
   key: string;
@@ -435,18 +438,13 @@ export function FilterManagement() {
   const handleApply = async () => {
     try {
       if (selectedMenuItem && (activeMenuTab === "main-menu" || activeMenuTab === "side-menu")) {
-        // Save menu filter settings
+        // Save menu filter settings (include ALL filter types so unchecked items persist)
         const menuName = activeMenuTab === "main-menu" ? "Main Menu" : "Side Menu";
-        const filters = filterTypes
-          .filter(filterType => {
-            const selectedItems = selectedFilters[filterType.key];
-            return selectedItems && selectedItems.size > 0;
-          })
-          .map(filterType => ({
-            item: filterType.label,
-            itemKey: filterType.key,
-            items: Array.from(selectedFilters[filterType.key])
-          }));
+        const filters = filterTypes.map(filterType => ({
+          item: filterType.label,
+          itemKey: filterType.key,
+          items: Array.from(selectedFilters[filterType.key] || [])
+        }));
 
         await saveMenuFilterSettings({
           menuName,
@@ -998,12 +996,13 @@ export function FilterManagement() {
                         return (
                           categoryName === "Fine Jewelry Collection" ||
                           categoryName === "Wedding Bands & Anniversary Bands" ||
-                          categoryName === "Engagement Rings"
+                          categoryName === "Engagement Rings" ||
+                          category._id === HERO_MENU_JEWELLERY_CATEGORY_ID
                         );
                       })
                       .map((category) => (
                         <SelectItem key={category._id} value={category._id}>
-                          {category.categoryName}
+                          {category._id === HERO_MENU_JEWELLERY_CATEGORY_ID ? "Jewellery" : category.categoryName}
                         </SelectItem>
                       ))}
                   </SelectContent>
