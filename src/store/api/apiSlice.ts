@@ -21,7 +21,7 @@ export const apiSlice = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Category', 'SubCategory', 'SubSubCategory', 'Auth', 'Banner', 'Product', 'Filter', 'Order', 'User', 'HeroMenu'],
+  tagTypes: ['Category', 'SubCategory', 'SubSubCategory', 'Auth', 'Banner', 'Product', 'Filter', 'Order', 'User', 'HeroMenu', 'CustomRingRequest', 'Appointment'],
   endpoints: () => ({}),
 });
 

@@ -11,7 +11,9 @@ import {
   Settings, 
   LogOut,
   Crown,
-  Filter
+  Filter,
+  Gem,
+  CalendarDays
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "../ui/utils";
@@ -30,6 +32,8 @@ const menuItems = [
   { path: "/order", label: "Orders", icon: ShoppingCart },
   { path: "/transaction", label: "Transactions", icon: CreditCard },
   { path: "/banner", label: "Banners", icon: Image },
+  { path: "/appointment", label: "Appointments", icon: CalendarDays },
+  { path: "/custom-ring-requests", label: "Custom Ring Requests", icon: Gem },
   { path: "/faq", label: "FAQs", icon: HelpCircle },
   { path: "/cms", label: "CMS", icon: FileText },
   { path: "/filter", label: "Filter Management", icon: Filter },

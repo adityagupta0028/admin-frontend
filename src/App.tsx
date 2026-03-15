@@ -15,6 +15,8 @@ import { CMSPage } from "./pages/CMSPage";
 import { SettingPage } from "./pages/SettingPage";
 import { FilterPage } from "./pages/FilterPage";
 import { HeroMenuPage } from "./pages/HeroMenuPage";
+import { CustomRingRequestPage } from "./pages/CustomRingRequestPage";
+import { AppointmentPage } from "./pages/AppointmentPage";
 import { Toaster } from "./components/ui/sonner";
 
 export default function App() {
@@ -39,6 +41,8 @@ export default function App() {
         <Route path="/setting" element={<SettingPage />} />
         <Route path="/filter" element={<FilterPage />} />
         <Route path="/hero-menu" element={<HeroMenuPage />} />
+        <Route path="/custom-ring-requests" element={<CustomRingRequestPage />} />
+        <Route path="/appointment" element={<AppointmentPage />} />
         
         {/* Redirect any unknown routes to dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
